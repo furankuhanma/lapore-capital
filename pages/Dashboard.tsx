@@ -69,9 +69,9 @@ const Dashboard: React.FC<DashboardProps> = ({ session: initialSession }) => {
     }
   }, [initialSession.id, profile]);
 
-  useEffect(() => {
-    fetchProfile();
-  }, []);
+useEffect(() => {
+  fetchProfile();
+}, []);
 
   // Real-time subscription for balance updates
   useEffect(() => {
