@@ -1,0 +1,8 @@
+
+{
+  "name": "Lapore-Capital",
+  "description": "A high-end financial dashboard for managing capital and assets with secure Supabase authentication.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
