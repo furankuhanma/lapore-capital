@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Camera, AlertCircle, Settings as SettingsIcon, Loader2 } from 'lucide-react';
+import { X, Camera, AlertCircle, Settings as SettingsIcon } from 'lucide-react';
 import { TransactionService } from '../lib/transactionService';
 
 interface QRScannerModalProps {
@@ -17,12 +17,9 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [permissionDenied, setPermissionDenied] = useState(false);
-  const [scanStatus, setScanStatus] = useState<string>('Initializing scanner...');
   const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const scanIntervalRef = useRef<number | null>(null);
-  const jsQRRef = useRef<any>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -30,12 +27,11 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({
       setError('');
       setPermissionDenied(false);
       setHasPermission(null);
-      setScanStatus('Initializing scanner...');
       
-      // Load jsQR library
-      loadJsQR().then(() => {
+      // Small delay to allow modal to render
+      setTimeout(() => {
         startCamera();
-      });
+      }, 300);
     } else {
       stopCamera();
     }
@@ -44,32 +40,6 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({
       stopCamera();
     };
   }, [isOpen]);
-
-  const loadJsQR = async (): Promise<void> => {
-    return new Promise((resolve, reject) => {
-      // Check if jsQR is already loaded
-      if ((window as any).jsQR) {
-        jsQRRef.current = (window as any).jsQR;
-        resolve();
-        return;
-      }
-
-      // Load jsQR from CDN
-      const script = document.createElement('script');
-      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jsqr/1.4.0/jsQR.min.js';
-      script.async = true;
-      script.onload = () => {
-        jsQRRef.current = (window as any).jsQR;
-        console.log('jsQR loaded successfully');
-        resolve();
-      };
-      script.onerror = () => {
-        console.error('Failed to load jsQR library');
-        reject(new Error('Failed to load QR scanner library'));
-      };
-      document.head.appendChild(script);
-    });
-  };
 
   const startCamera = async () => {
     try {
@@ -95,8 +65,6 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({
         return;
       }
 
-      setScanStatus('Requesting camera permission...');
-
       // Request camera permission with optimal constraints for mobile
       const constraints = {
         video: { 
@@ -115,23 +83,19 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({
         
         // Wait for video to be ready
         videoRef.current.onloadedmetadata = () => {
-          videoRef.current?.play().then(() => {
-            setHasPermission(true);
-            setIsScanning(true);
-            setPermissionDenied(false);
-            setScanStatus('Scanning for QR code...');
-            
-            // Start scanning after video is playing
-            setTimeout(() => {
-              startQRScanning();
-            }, 500);
-          }).catch(err => {
+          videoRef.current?.play().catch(err => {
             console.error('Error playing video:', err);
             setError('Failed to start camera preview');
           });
         };
       }
       
+      setHasPermission(true);
+      setIsScanning(true);
+      setPermissionDenied(false);
+      
+      // Start scanning for QR codes
+      startQRScanning();
     } catch (err: any) {
       console.error('Error accessing camera:', err);
       
@@ -172,85 +136,18 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({
   };
 
   const startQRScanning = () => {
-    if (!videoRef.current || !canvasRef.current || !jsQRRef.current) {
-      console.error('Scanner not ready:', {
-        video: !!videoRef.current,
-        canvas: !!canvasRef.current,
-        jsQR: !!jsQRRef.current
-      });
-      return;
-    }
-
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-
-    if (!ctx) {
-      console.error('Could not get canvas context');
-      return;
-    }
-
-    console.log('Starting QR code scanning loop...');
-
-    const scan = () => {
-      if (!isScanning || !video || video.readyState !== video.HAVE_ENOUGH_DATA) {
-        return;
+    // Simple QR code detection simulation
+    // In a real implementation, you would use a library like jsQR
+    scanIntervalRef.current = window.setInterval(() => {
+      if (videoRef.current && isScanning) {
+        // This is a placeholder for actual QR scanning logic
+        // You would typically:
+        // 1. Create a canvas
+        // 2. Draw the video frame to canvas
+        // 3. Use jsQR to decode the image data
+        console.log('Scanning for QR code...');
       }
-
-      // Set canvas size to match video
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-
-      // Draw video frame to canvas
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-      // Get image data
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-
-      // Try to decode QR code
-      const code = jsQRRef.current(imageData.data, imageData.width, imageData.height, {
-        inversionAttempts: 'dontInvert',
-      });
-
-      if (code) {
-        console.log('QR Code detected:', code.data);
-        handleQRCodeDetected(code.data);
-      }
-    };
-
-    // Scan every 300ms
-    scanIntervalRef.current = window.setInterval(scan, 300);
-  };
-
-  const handleQRCodeDetected = (qrData: string) => {
-    console.log('Processing QR data:', qrData);
-    
-    // Stop scanning
-    setIsScanning(false);
-    setScanStatus('QR Code found! Processing...');
-    
-    // Parse the QR data
-    const parsed = TransactionService.parseQRData(qrData);
-    
-    if (parsed && parsed.userId) {
-      console.log('Valid QR code:', parsed);
-      // Success! Close modal and pass data
-      onScanSuccess(parsed.userId, parsed.username);
-      handleClose();
-    } else {
-      // Invalid QR code format
-      console.error('Invalid QR code format:', qrData);
-      setError('Invalid QR code. Please scan a valid Lapore-Capital QR code.');
-      setScanStatus('Invalid QR code detected');
-      
-      // Resume scanning after 2 seconds
-      setTimeout(() => {
-        setError('');
-        setScanStatus('Scanning for QR code...');
-        setIsScanning(true);
-        startQRScanning();
-      }, 2000);
-    }
+    }, 500);
   };
 
   const handleManualInput = () => {
@@ -288,14 +185,15 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({
     alert(`To enable camera access:\n\n${settingsGuide}\n\nAfter enabling, return here and click "Try Again".`);
   };
 
-  // Simulated QR scan success (for testing when you don't have a QR code)
-  const simulateScan = () => {
-    // Get a test user ID - you can replace this with an actual user ID from your database
-    const testQRData = TransactionService.generateReceiveQRData(
-      'test-user-id', // Replace with real user ID for testing
-      'testuser'
-    );
-    handleQRCodeDetected(testQRData);
+  // Simulated QR scan success (for testing)
+  const simulateScan = (qrData: string) => {
+    const parsed = TransactionService.parseQRData(qrData);
+    if (parsed) {
+      onScanSuccess(parsed.userId, parsed.username);
+      handleClose();
+    } else {
+      setError('Invalid QR code. Please scan a valid Lapore-Capital QR code.');
+    }
   };
 
   if (!isOpen) return null;
@@ -330,29 +228,19 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({
             muted
           />
           
-          {/* Hidden canvas for QR code processing */}
-          <canvas ref={canvasRef} className="hidden" />
-          
           {/* Scanning Overlay */}
           {isScanning && hasPermission && (
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="relative w-64 h-64">
                 {/* Corner brackets */}
-                <div className="absolute top-0 left-0 w-16 h-16 border-t-4 border-l-4 border-ethblue rounded-tl-2xl animate-pulse"></div>
-                <div className="absolute top-0 right-0 w-16 h-16 border-t-4 border-r-4 border-ethblue rounded-tr-2xl animate-pulse"></div>
-                <div className="absolute bottom-0 left-0 w-16 h-16 border-b-4 border-l-4 border-ethblue rounded-bl-2xl animate-pulse"></div>
-                <div className="absolute bottom-0 right-0 w-16 h-16 border-b-4 border-r-4 border-ethblue rounded-br-2xl animate-pulse"></div>
+                <div className="absolute top-0 left-0 w-16 h-16 border-t-4 border-l-4 border-ethblue rounded-tl-2xl"></div>
+                <div className="absolute top-0 right-0 w-16 h-16 border-t-4 border-r-4 border-ethblue rounded-tr-2xl"></div>
+                <div className="absolute bottom-0 left-0 w-16 h-16 border-b-4 border-l-4 border-ethblue rounded-bl-2xl"></div>
+                <div className="absolute bottom-0 right-0 w-16 h-16 border-b-4 border-r-4 border-ethblue rounded-br-2xl"></div>
                 
                 {/* Scanning line animation */}
                 <div className="absolute inset-0 overflow-hidden">
                   <div className="h-1 bg-gradient-to-r from-transparent via-ethblue to-transparent animate-scan"></div>
-                </div>
-              </div>
-              
-              {/* Scan status */}
-              <div className="absolute bottom-8 left-0 right-0 text-center">
-                <div className="inline-block bg-black/70 backdrop-blur-sm px-4 py-2 rounded-full">
-                  <p className="text-white text-sm font-medium">{scanStatus}</p>
                 </div>
               </div>
             </div>
@@ -362,9 +250,9 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({
           {hasPermission === null && !error && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/80">
               <div className="text-center space-y-4">
-                <Loader2 className="w-16 h-16 text-ethblue animate-spin mx-auto" />
+                <div className="w-16 h-16 border-4 border-ethblue border-t-transparent rounded-full animate-spin mx-auto"></div>
                 <div>
-                  <h3 className="text-lg font-bold text-white mb-2">{scanStatus}</h3>
+                  <h3 className="text-lg font-bold text-white mb-2">Requesting Camera Access</h3>
                   <p className="text-slate-400 text-sm">
                     Please allow camera permission when prompted
                   </p>
@@ -412,14 +300,12 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({
         {/* Instructions */}
         <div className="p-6 space-y-4">
           {isScanning && (
-            <div className="bg-ethblue/10 border border-ethblue/20 rounded-xl p-4">
-              <p className="text-ethblue text-sm text-center font-medium">
-                📱 Position the QR code within the frame
-              </p>
-            </div>
+            <p className="text-center text-slate-400 text-sm">
+              Position the QR code within the frame to scan
+            </p>
           )}
 
-          {error && (
+          {error && !hasPermission && (
             <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4">
               <p className="text-red-400 text-sm text-center">{error}</p>
             </div>
@@ -432,16 +318,6 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({
             Enter Wallet Address Manually
           </button>
 
-          {/* Dev Testing Button - Shows in development */}
-          {process.env.NODE_ENV === 'development' && (
-            <button
-              onClick={simulateScan}
-              className="w-full bg-green-500/20 hover:bg-green-500/30 border border-green-500/20 text-green-400 font-bold py-2 rounded-xl transition-colors text-sm"
-            >
-              [Dev] Simulate Valid QR Scan
-            </button>
-          )}
-
           {/* Security Notice for HTTP */}
           {!window.isSecureContext && window.location.hostname !== 'localhost' && (
             <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4">
@@ -449,6 +325,21 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({
                 <strong>Note:</strong> Camera access requires HTTPS. For testing, use manual entry or access via HTTPS/localhost.
               </p>
             </div>
+          )}
+
+          {/* Dev Testing Button - Remove in production */}
+          {process.env.NODE_ENV === 'development' && (
+            <button
+              onClick={() => simulateScan(JSON.stringify({
+                type: 'lapore-capital-transfer',
+                userId: 'test-user-id',
+                username: 'testuser',
+                timestamp: Date.now()
+              }))}
+              className="w-full bg-green-500/20 hover:bg-green-500/30 border border-green-500/20 text-green-400 font-bold py-2 rounded-xl transition-colors text-sm"
+            >
+              [Dev] Simulate Scan
+            </button>
           )}
         </div>
       </div>
