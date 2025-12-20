@@ -1,10 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { supabase } from './lib/supabase';
-import AuthPage from './pages/AuthPage';
-import Dashboard from './pages/Dashboard';
-import { UserSession } from './types';
+import { supabase } from '../lib/supabase';
+import AuthPage from '../pages/AuthPage';
+import Dashboard from '../pages/Dashboard';
+import { UserSession } from '../types';
 
 const App: React.FC = () => {
   const [session, setSession] = useState<UserSession | null>(null);
