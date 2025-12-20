@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Camera, AlertCircle, Settings as SettingsIcon } from 'lucide-react';
-import { TransactionService } from '../lib/transactionService';
+import { TransactionService } from '../src/context/lib/transactionService';
 
 interface QRScannerModalProps {
   isOpen: boolean;
@@ -192,7 +192,7 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({
       onScanSuccess(parsed.userId, parsed.username);
       handleClose();
     } else {
-      setError('Invalid QR code. Please scan a valid Lapore-Capital QR code.');
+      setError('Invalid QR code. Please scan a valid Lapore-Finance QR code.');
     }
   };
 
@@ -331,7 +331,7 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({
           {process.env.NODE_ENV === 'development' && (
             <button
               onClick={() => simulateScan(JSON.stringify({
-                type: 'lapore-capital-transfer',
+                type: 'lapore-finance-transfer',
                 userId: 'test-user-id',
                 username: 'testuser',
                 timestamp: Date.now()

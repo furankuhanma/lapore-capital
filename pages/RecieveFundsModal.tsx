@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { X, Download, Share2, Copy, Check } from 'lucide-react';
-import { Profile } from '../types';
-import { TransactionService } from '../lib/transactionService';
+import { Profile } from '../src/context/types';
+import { TransactionService } from '../src/context/lib/transactionService';
 
 interface ReceiveFundsModalProps {
   isOpen: boolean;
@@ -140,7 +140,7 @@ const ReceiveFundsModal: React.FC<ReceiveFundsModalProps> = ({
     const canvas = container.querySelector('canvas');
     if (canvas) {
       const link = document.createElement('a');
-      link.download = `lapore-capital-qr-${currentUser.username}.png`;
+      link.download = `lapore-finance-qr-${currentUser.username}.png`;
       link.href = canvas.toDataURL();
       link.click();
     }
@@ -150,8 +150,8 @@ const ReceiveFundsModal: React.FC<ReceiveFundsModalProps> = ({
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'My Lapore-Capital Wallet',
-          text: `Send me funds on Lapore-Capital! Username: @${currentUser.username}`,
+          title: 'My Lapore-Finance Wallet',
+          text: `Send me funds on Lapore-Finance! Username: @${currentUser.username}`,
           url: window.location.href,
         });
       } catch (err) {
@@ -258,7 +258,7 @@ const ReceiveFundsModal: React.FC<ReceiveFundsModalProps> = ({
             <div className="w-5 h-5 bg-ethblue/20 rounded-full flex items-center justify-center">
               <span className="text-xs text-ethblue font-bold">L</span>
             </div>
-            Powered by Lapore-Capital
+            Powered by Lapore-Finance
           </div>
         </div>
       </div>

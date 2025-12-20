@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Send, Loader2, CheckCircle2, QrCode, User } from 'lucide-react';
-import { TransactionService } from '../lib/transactionService';
-import { Profile } from '../types';
+import { TransactionService } from '../src/context/lib/transactionService';
+import { Profile } from '../src/context/types';
 
 interface SendFundsModalProps {
   isOpen: boolean;
@@ -278,7 +278,7 @@ const SendFundsModal: React.FC<SendFundsModalProps> = ({
                 <div className="w-6 h-6 bg-ethblue/20 rounded-full flex items-center justify-center">
                   <span className="text-xs">L</span>
                 </div>
-                Lapore-Capital
+                Lapore-Finance
               </div>
             </div>
           )}

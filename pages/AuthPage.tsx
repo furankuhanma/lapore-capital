@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
-import { supabase } from '../lib/supabase';
-import { AuthMode } from '../types';
+import { supabase } from '../src/context/lib/supabase';
+import { AuthMode } from '../src/context/types';
 import { Lock, Mail, User, ShieldCheck, ChevronRight, Loader2, Cpu } from 'lucide-react';
 
 const AuthPage: React.FC = () => {
@@ -76,11 +76,8 @@ const AuthPage: React.FC = () => {
         </div>
         
         <div className="relative z-10 text-center max-w-xl">
-          <div className="inline-flex p-4 rounded-full bg-white/5 border border-white/10 mb-8 animate-pulse">
-            <Cpu className="w-12 h-12 text-ethblue" />
-          </div>
           <h1 className="text-6xl font-bold tracking-tight text-white mb-6">
-            Lapore<span className="text-ethblue">.</span>
+            Lapore Finance<span className="text-ethblue"></span>
           </h1>
           <p className="text-slate-400 text-xl font-light leading-relaxed">
             The next generation of capital management. Secure, decentralized, and intelligent.
@@ -97,10 +94,10 @@ const AuthPage: React.FC = () => {
         <div className="w-full max-w-sm space-y-10 relative z-10">
           <div className="text-center md:text-left space-y-2">
             <div className="md:hidden inline-block mb-4">
-               <h1 className="text-3xl font-bold text-white tracking-tighter">Lapore<span className="text-ethblue">.</span></h1>
+               <h1 className="text-3xl font-bold text-white tracking-tighter">Lapore Finance<span className="text-ethblue"></span></h1>
             </div>
             <h2 className="text-4xl font-bold text-white tracking-tight">
-              {mode === 'login' ? 'Sign In' : 'Join Lapore'}
+              {mode === 'login' ? 'Sign In' : ''}
             </h2>
             <p className="text-slate-500 font-medium">
               {mode === 'login' 
@@ -197,7 +194,7 @@ const AuthPage: React.FC = () => {
               ) : (
                 <>
                   <span className="tracking-wide uppercase text-sm">
-                    {mode === 'login' ? 'Authenticate' : 'Get Started'}
+                    {mode === 'login' ? 'Login' : 'Get Started'}
                   </span>
                   <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </>

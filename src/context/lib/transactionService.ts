@@ -208,7 +208,7 @@ export class TransactionService {
    */
   static generateReceiveQRData(userId: string, username?: string): string {
     return JSON.stringify({
-      type: 'lapore-capital-transfer',
+      type: 'lapore-finance-transfer',
       userId,
       username,
       timestamp: Date.now(),
@@ -221,7 +221,7 @@ export class TransactionService {
   static parseQRData(qrData: string): { userId: string; username?: string } | null {
     try {
       const parsed = JSON.parse(qrData);
-      if (parsed.type === 'lapore-capital-transfer' && parsed.userId) {
+      if (parsed.type === 'lapore-finance-transfer' && parsed.userId) {
         return {
           userId: parsed.userId,
           username: parsed.username,

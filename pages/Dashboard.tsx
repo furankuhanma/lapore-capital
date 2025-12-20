@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../lib/supabase';
-import { UserSession, Profile } from '../types';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../src/context/AuthContext';
+import { supabase } from '../src/context/lib/supabase';
+import { Profile } from '../src/context/types';
 import { 
   LogOut, 
   Wallet, 
@@ -13,7 +14,6 @@ import {
   Repeat,
   Zap,
   LayoutGrid,
-  Loader2,
   RefreshCw
 } from 'lucide-react';
 import SendFundsModal from './SendFundsModal';
@@ -21,13 +21,9 @@ import QRScannerModal from './QRScannerModal';
 import ReceiveFundsModal from './RecieveFundsModal';
 import TransactionHistory from './TransactionHistory';
 
-interface DashboardProps {
-  session: UserSession;
-}
-
-const Dashboard: React.FC<DashboardProps> = ({ session: initialSession }) => {
-  const [profile, setProfile] = useState<Profile | null>(initialSession.profile || null);
-  const [loading, setLoading] = useState(false);
+const Dashboard: React.FC = () => {
+  const { profile: authProfile, signOut, refreshProfile } = useAuth();
+  const [profile, setProfile] = useState<Profile | null>(authProfile);
   const [refreshing, setRefreshing] = useState(false);
   
   // Modal states
@@ -39,45 +35,23 @@ const Dashboard: React.FC<DashboardProps> = ({ session: initialSession }) => {
   const [balanceChanged, setBalanceChanged] = useState(false);
   const [previousBalance, setPreviousBalance] = useState<number | null>(null);
 
-  // Fetch latest profile data from Supabase
-  const fetchProfile = useCallback(async (isSilent = false) => {
-    if (!isSilent) setLoading(true);
-    else setRefreshing(true);
-
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', initialSession.id)
-        .single();
-
-      if (error) throw error;
-      if (data) {
-        // Check if balance changed for animation
-        if (profile && data.balance !== profile.balance) {
-          setPreviousBalance(profile.balance);
-          setBalanceChanged(true);
-          setTimeout(() => setBalanceChanged(false), 2000);
-        }
-        setProfile(data);
+  // Sync with auth context profile
+  useEffect(() => {
+    if (authProfile) {
+      // Check if balance changed for animation
+      if (profile && authProfile.balance !== profile.balance) {
+        setPreviousBalance(profile.balance);
+        setBalanceChanged(true);
+        setTimeout(() => setBalanceChanged(false), 2000);
       }
-    } catch (err) {
-      console.error('Error fetching profile:', err);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+      setProfile(authProfile);
     }
-  }, [initialSession.id, profile]);
-
-useEffect(() => {
-  fetchProfile();
-}, []);
+  }, [authProfile]);
 
   // Real-time subscription for balance updates
   useEffect(() => {
-    if (!profile) return;
+    if (!profile?.id) return;
 
-    // Subscribe to profile changes
     const channel = supabase
       .channel('profile-changes')
       .on(
@@ -107,31 +81,28 @@ useEffect(() => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [profile]);
+  }, [profile?.id]);
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await refreshProfile();
+    setRefreshing(false);
   };
 
   const handleSendSuccess = () => {
-    fetchProfile(true);
+    handleRefresh();
   };
 
   const handleQRScanSuccess = (userId: string, username?: string) => {
     setQrScannerOpen(false);
     setSendModalOpen(true);
-    // You can pre-fill the recipient here if needed
   };
 
-  if (loading && !profile) {
-    return (
-      <div className="min-h-screen bg-darkbg flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-ethblue animate-spin" />
-      </div>
-    );
+  if (!profile) {
+    return null; // This shouldn't happen due to ProtectedRoute, but adding for safety
   }
 
-  const balanceIncrease = previousBalance !== null && profile 
+  const balanceIncrease = previousBalance !== null 
     ? profile.balance > previousBalance 
     : false;
 
@@ -141,20 +112,21 @@ useEffect(() => {
       <header className="flex items-center justify-between px-6 py-4 sticky top-0 z-30 bg-darkbg/80 backdrop-blur-xl">
         <div className="flex items-center gap-3">
           <img 
-            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.full_name || 'U')}&background=3C3CFF&color=fff&rounded=true`} 
+            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(profile.full_name || 'U')}&background=3C3CFF&color=fff&rounded=true`} 
             alt="Avatar" 
             className="w-10 h-10 rounded-full border border-white/10"
           />
           <div className="flex flex-col">
             <span className="text-sm font-bold text-white tracking-tight">Wallet 1</span>
             <span className="text-[10px] text-slate-500 uppercase font-bold tracking-widest">
-              {profile?.username ? `@${profile.username}` : 'Main Account'}
+              {profile.username ? `@${profile.username}` : 'Main Account'}
             </span>
           </div>
         </div>
         <div className="flex items-center gap-2">
-           <button 
-            onClick={() => fetchProfile(true)}
+          <button 
+            onClick={handleRefresh}
+            disabled={refreshing}
             className={`p-2 rounded-full hover:bg-white/5 transition-colors ${refreshing ? 'animate-spin' : ''}`}
           >
             <RefreshCw className="w-5 h-5 text-slate-400" />
@@ -166,17 +138,17 @@ useEffect(() => {
         </div>
       </header>
 
-      {/* Main Container - Mobile Centered */}
+      {/* Main Container */}
       <main className="flex-1 max-w-lg mx-auto w-full px-6 py-8 space-y-12">
         
-        {/* Balance Section with Animation */}
+        {/* Balance Section */}
         <section className="text-center space-y-3">
           <p className="text-slate-500 text-sm font-medium tracking-wide">Portfolio Balance</p>
           <div className="space-y-1">
             <h1 className={`text-6xl font-black text-white tracking-tighter transition-all duration-500 ${
               balanceChanged ? (balanceIncrease ? 'animate-balance-increase' : 'animate-balance-decrease') : ''
             }`}>
-              ₱{(profile?.balance || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+              ₱{(profile.balance || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
             </h1>
             {balanceChanged && (
               <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border animate-in fade-in zoom-in-95 ${
@@ -187,7 +159,7 @@ useEffect(() => {
                 <span className={`text-xs font-bold ${
                   balanceIncrease ? 'text-green-400' : 'text-red-400'
                 }`}>
-                  {balanceIncrease ? '+' : '-'}₱{Math.abs((profile?.balance || 0) - (previousBalance || 0)).toFixed(2)}
+                  {balanceIncrease ? '+' : '-'}₱{Math.abs(profile.balance - (previousBalance || 0)).toFixed(2)}
                 </span>
               </div>
             )}
@@ -210,53 +182,48 @@ useEffect(() => {
           />
         </section>
 
-        {/* Portfolio / History Section */}
+        {/* Portfolio Section */}
         <section className="space-y-6">
           <div className="flex items-center justify-between">
             <h3 className="text-xl font-bold text-white tracking-tight">Portfolio</h3>
             <button className="text-xs font-bold text-ethblue uppercase tracking-widest hover:text-white transition-colors">Manage</button>
           </div>
 
-          <div className="space-y-4">
-            {/* Empty State placeholder */}
-            <div className="bg-cardbg border border-white/5 p-8 rounded-3xl flex flex-col items-center justify-center text-center space-y-4 group transition-all hover:border-ethblue/30">
-              <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-ethblue/10 transition-colors">
-                <Wallet className="w-8 h-8 text-slate-600 group-hover:text-ethblue transition-colors" />
-              </div>
-              <div>
-                <p className="text-white font-bold">No assets yet</p>
-                <p className="text-slate-500 text-xs mt-1">Start building your portfolio by depositing capital.</p>
-              </div>
-              <button className="bg-ethblue/20 hover:bg-ethblue/30 text-ethblue text-[10px] font-black uppercase tracking-widest px-6 py-2 rounded-full transition-all">
-                Get Started
-              </button>
+          <div className="bg-cardbg border border-white/5 p-8 rounded-3xl flex flex-col items-center justify-center text-center space-y-4 group transition-all hover:border-ethblue/30">
+            <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-ethblue/10 transition-colors">
+              <Wallet className="w-8 h-8 text-slate-600 group-hover:text-ethblue transition-colors" />
             </div>
+            <div>
+              <p className="text-white font-bold">No assets yet</p>
+              <p className="text-slate-500 text-xs mt-1">Start building your portfolio by depositing capital.</p>
+            </div>
+            <button className="bg-ethblue/20 hover:bg-ethblue/30 text-ethblue text-[10px] font-black uppercase tracking-widest px-6 py-2 rounded-full transition-all">
+              Get Started
+            </button>
           </div>
         </section>
 
-        {/* Transaction History Section */}
+        {/* Transaction History */}
         <section className="space-y-4 pt-4 pb-20">
-          {profile && (
-            <TransactionHistory 
-              userId={profile.id} 
-              onRefresh={() => fetchProfile(true)}
-            />
-          )}
+          <TransactionHistory 
+            userId={profile.id} 
+            onRefresh={handleRefresh}
+          />
         </section>
       </main>
 
-      {/* Bottom Navigation Bar */}
+      {/* Bottom Navigation */}
       <nav className="fixed bottom-0 inset-x-0 h-20 bg-darkbg/90 backdrop-blur-2xl border-t border-white/5 flex items-center justify-around px-4 z-40 lg:hidden">
         <NavTab icon={<Wallet />} label="Wallet" active />
         <NavTab icon={<LayoutGrid />} label="Assets" />
         <NavTab icon={<Repeat />} label="Swap" />
         <NavTab icon={<Zap />} label="Activity" />
-        <NavTab icon={<Settings />} label="Settings" onClick={() => {}} />
+        <NavTab icon={<Settings />} label="Settings" />
       </nav>
 
-      {/* Logout Floating Button (Desktop) */}
+      {/* Logout Button (Desktop) */}
       <button 
-        onClick={handleLogout}
+        onClick={signOut}
         className="hidden lg:flex fixed bottom-8 right-8 items-center gap-2 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/20 px-6 py-3 rounded-2xl font-bold transition-all group z-50 shadow-2xl"
       >
         <LogOut className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
@@ -264,32 +231,28 @@ useEffect(() => {
       </button>
 
       {/* Modals */}
-      {profile && (
-        <>
-          <SendFundsModal
-            isOpen={sendModalOpen}
-            onClose={() => setSendModalOpen(false)}
-            currentUser={profile}
-            onSuccess={handleSendSuccess}
-            onOpenQRScanner={() => {
-              setSendModalOpen(false);
-              setQrScannerOpen(true);
-            }}
-          />
+      <SendFundsModal
+        isOpen={sendModalOpen}
+        onClose={() => setSendModalOpen(false)}
+        currentUser={profile}
+        onSuccess={handleSendSuccess}
+        onOpenQRScanner={() => {
+          setSendModalOpen(false);
+          setQrScannerOpen(true);
+        }}
+      />
 
-          <ReceiveFundsModal
-            isOpen={receiveModalOpen}
-            onClose={() => setReceiveModalOpen(false)}
-            currentUser={profile}
-          />
+      <ReceiveFundsModal
+        isOpen={receiveModalOpen}
+        onClose={() => setReceiveModalOpen(false)}
+        currentUser={profile}
+      />
 
-          <QRScannerModal
-            isOpen={qrScannerOpen}
-            onClose={() => setQrScannerOpen(false)}
-            onScanSuccess={handleQRScanSuccess}
-          />
-        </>
-      )}
+      <QRScannerModal
+        isOpen={qrScannerOpen}
+        onClose={() => setQrScannerOpen(false)}
+        onScanSuccess={handleQRScanSuccess}
+      />
 
       <style>{`
         @keyframes balance-increase {
@@ -333,12 +296,8 @@ const NavTab: React.FC<{
   icon: React.ReactNode; 
   label: string; 
   active?: boolean; 
-  onClick?: () => void;
-}> = ({ icon, label, active, onClick }) => (
-  <button 
-    onClick={onClick}
-    className={`flex flex-col items-center gap-1.5 transition-all ${active ? 'text-ethblue' : 'text-slate-600 hover:text-slate-400'}`}
-  >
+}> = ({ icon, label, active }) => (
+  <button className={`flex flex-col items-center gap-1.5 transition-all ${active ? 'text-ethblue' : 'text-slate-600 hover:text-slate-400'}`}>
     {React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: 'w-6 h-6' }) : icon}
     <span className={`text-[10px] font-bold uppercase tracking-tighter ${active ? 'opacity-100' : 'opacity-60'}`}>{label}</span>
     {active && <div className="w-1 h-1 bg-ethblue rounded-full mt-0.5 shadow-[0_0_8px_rgba(60,60,255,0.8)]"></div>}
