@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { UserSession, Profile } from '../types';
@@ -17,6 +16,10 @@ import {
   Loader2,
   RefreshCw
 } from 'lucide-react';
+import SendFundsModal from './SendFundsModal';
+import QRScannerModal from './QRScannerModal';
+import ReceiveFundsModal from './RecieveFundsModal';
+import TransactionHistory from './TransactionHistory';
 
 interface DashboardProps {
   session: UserSession;
@@ -26,6 +29,15 @@ const Dashboard: React.FC<DashboardProps> = ({ session: initialSession }) => {
   const [profile, setProfile] = useState<Profile | null>(initialSession.profile || null);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  
+  // Modal states
+  const [sendModalOpen, setSendModalOpen] = useState(false);
+  const [receiveModalOpen, setReceiveModalOpen] = useState(false);
+  const [qrScannerOpen, setQrScannerOpen] = useState(false);
+  
+  // Animation state for balance changes
+  const [balanceChanged, setBalanceChanged] = useState(false);
+  const [previousBalance, setPreviousBalance] = useState<number | null>(null);
 
   // Fetch latest profile data from Supabase
   const fetchProfile = useCallback(async (isSilent = false) => {
@@ -40,21 +52,75 @@ const Dashboard: React.FC<DashboardProps> = ({ session: initialSession }) => {
         .single();
 
       if (error) throw error;
-      if (data) setProfile(data);
+      if (data) {
+        // Check if balance changed for animation
+        if (profile && data.balance !== profile.balance) {
+          setPreviousBalance(profile.balance);
+          setBalanceChanged(true);
+          setTimeout(() => setBalanceChanged(false), 2000);
+        }
+        setProfile(data);
+      }
     } catch (err) {
       console.error('Error fetching profile:', err);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [initialSession.id]);
+  }, [initialSession.id, profile]);
 
   useEffect(() => {
     fetchProfile();
-  }, [fetchProfile]);
+  }, []);
+
+  // Real-time subscription for balance updates
+  useEffect(() => {
+    if (!profile) return;
+
+    // Subscribe to profile changes
+    const channel = supabase
+      .channel('profile-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'profiles',
+          filter: `id=eq.${profile.id}`,
+        },
+        (payload) => {
+          console.log('Profile updated:', payload);
+          const newData = payload.new as Profile;
+          
+          // Trigger balance animation
+          if (newData.balance !== profile.balance) {
+            setPreviousBalance(profile.balance);
+            setBalanceChanged(true);
+            setTimeout(() => setBalanceChanged(false), 2000);
+          }
+          
+          setProfile(newData);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [profile]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
+  };
+
+  const handleSendSuccess = () => {
+    fetchProfile(true);
+  };
+
+  const handleQRScanSuccess = (userId: string, username?: string) => {
+    setQrScannerOpen(false);
+    setSendModalOpen(true);
+    // You can pre-fill the recipient here if needed
   };
 
   if (loading && !profile) {
@@ -64,6 +130,10 @@ const Dashboard: React.FC<DashboardProps> = ({ session: initialSession }) => {
       </div>
     );
   }
+
+  const balanceIncrease = previousBalance !== null && profile 
+    ? profile.balance > previousBalance 
+    : false;
 
   return (
     <div className="min-h-screen bg-darkbg flex flex-col font-sans text-slate-200">
@@ -99,25 +169,45 @@ const Dashboard: React.FC<DashboardProps> = ({ session: initialSession }) => {
       {/* Main Container - Mobile Centered */}
       <main className="flex-1 max-w-lg mx-auto w-full px-6 py-8 space-y-12">
         
-        {/* Balance Section */}
+        {/* Balance Section with Animation */}
         <section className="text-center space-y-3">
           <p className="text-slate-500 text-sm font-medium tracking-wide">Portfolio Balance</p>
           <div className="space-y-1">
-            <h1 className="text-6xl font-black text-white tracking-tighter">
+            <h1 className={`text-6xl font-black text-white tracking-tighter transition-all duration-500 ${
+              balanceChanged ? (balanceIncrease ? 'animate-balance-increase' : 'animate-balance-decrease') : ''
+            }`}>
               ₱{(profile?.balance || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
             </h1>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-ethblue/10 rounded-full border border-ethblue/20">
-              <span className="text-xs font-bold text-ethblue">+0.00%</span>
-            </div>
+            {balanceChanged && (
+              <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border animate-in fade-in zoom-in-95 ${
+                balanceIncrease 
+                  ? 'bg-green-500/10 border-green-500/20' 
+                  : 'bg-red-500/10 border-red-500/20'
+              }`}>
+                <span className={`text-xs font-bold ${
+                  balanceIncrease ? 'text-green-400' : 'text-red-400'
+                }`}>
+                  {balanceIncrease ? '+' : '-'}₱{Math.abs((profile?.balance || 0) - (previousBalance || 0)).toFixed(2)}
+                </span>
+              </div>
+            )}
           </div>
         </section>
 
         {/* Action Buttons Grid */}
         <section className="grid grid-cols-4 gap-4">
-          <ActionButton icon={<Plus />} label="Buy" />
-          <ActionButton icon={<Minus />} label="Sell" />
-          <ActionButton icon={<ArrowUp />} label="Send" />
-          <ActionButton icon={<ArrowDown />} label="Deposit" />
+          <ActionButton icon={<Plus />} label="Buy" onClick={() => {}} />
+          <ActionButton icon={<Minus />} label="Sell" onClick={() => {}} />
+          <ActionButton 
+            icon={<ArrowUp />} 
+            label="Send" 
+            onClick={() => setSendModalOpen(true)}
+          />
+          <ActionButton 
+            icon={<ArrowDown />} 
+            label="Receive" 
+            onClick={() => setReceiveModalOpen(true)}
+          />
         </section>
 
         {/* Portfolio / History Section */}
@@ -144,13 +234,14 @@ const Dashboard: React.FC<DashboardProps> = ({ session: initialSession }) => {
           </div>
         </section>
 
-        {/* Prepared History Section (Static for now) */}
+        {/* Transaction History Section */}
         <section className="space-y-4 pt-4 pb-20">
-           <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest">Transaction History</h3>
-           <div className="flex flex-col items-center justify-center py-10 opacity-40">
-              <HistoryPlaceholder className="w-12 h-12 text-slate-700" />
-              <p className="text-slate-600 text-xs mt-2 italic">Ledger synchronization active...</p>
-           </div>
+          {profile && (
+            <TransactionHistory 
+              userId={profile.id} 
+              onRefresh={() => fetchProfile(true)}
+            />
+          )}
         </section>
       </main>
 
@@ -171,45 +262,87 @@ const Dashboard: React.FC<DashboardProps> = ({ session: initialSession }) => {
         <LogOut className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
         <span>Terminate</span>
       </button>
+
+      {/* Modals */}
+      {profile && (
+        <>
+          <SendFundsModal
+            isOpen={sendModalOpen}
+            onClose={() => setSendModalOpen(false)}
+            currentUser={profile}
+            onSuccess={handleSendSuccess}
+            onOpenQRScanner={() => {
+              setSendModalOpen(false);
+              setQrScannerOpen(true);
+            }}
+          />
+
+          <ReceiveFundsModal
+            isOpen={receiveModalOpen}
+            onClose={() => setReceiveModalOpen(false)}
+            currentUser={profile}
+          />
+
+          <QRScannerModal
+            isOpen={qrScannerOpen}
+            onClose={() => setQrScannerOpen(false)}
+            onScanSuccess={handleQRScanSuccess}
+          />
+        </>
+      )}
+
+      <style>{`
+        @keyframes balance-increase {
+          0% { transform: scale(1); color: rgb(255, 255, 255); }
+          50% { transform: scale(1.05); color: rgb(74, 222, 128); }
+          100% { transform: scale(1); color: rgb(255, 255, 255); }
+        }
+        
+        @keyframes balance-decrease {
+          0% { transform: scale(1); color: rgb(255, 255, 255); }
+          50% { transform: scale(0.95); color: rgb(248, 113, 113); }
+          100% { transform: scale(1); color: rgb(255, 255, 255); }
+        }
+        
+        .animate-balance-increase {
+          animation: balance-increase 0.6s ease-out;
+        }
+        
+        .animate-balance-decrease {
+          animation: balance-decrease 0.6s ease-out;
+        }
+      `}</style>
     </div>
   );
 };
 
-const ActionButton: React.FC<{ icon: React.ReactNode, label: string }> = ({ icon, label }) => (
-  <button className="flex flex-col items-center gap-2 group">
+const ActionButton: React.FC<{ 
+  icon: React.ReactNode; 
+  label: string; 
+  onClick: () => void;
+}> = ({ icon, label, onClick }) => (
+  <button onClick={onClick} className="flex flex-col items-center gap-2 group">
     <div className="w-14 h-14 bg-ethblue rounded-full flex items-center justify-center text-white shadow-xl shadow-ethblue/20 group-hover:scale-110 group-active:scale-95 transition-all">
-      {/* Fix: Use React.isValidElement and cast ReactElement with expected props to avoid TypeScript overload errors */}
       {React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: 'w-6 h-6' }) : icon}
     </div>
     <span className="text-xs font-bold text-slate-400 group-hover:text-white transition-colors tracking-wide">{label}</span>
   </button>
 );
 
-const NavTab: React.FC<{ icon: React.ReactNode, label: string, active?: boolean, onClick?: () => void }> = ({ icon, label, active, onClick }) => (
+const NavTab: React.FC<{ 
+  icon: React.ReactNode; 
+  label: string; 
+  active?: boolean; 
+  onClick?: () => void;
+}> = ({ icon, label, active, onClick }) => (
   <button 
     onClick={onClick}
     className={`flex flex-col items-center gap-1.5 transition-all ${active ? 'text-ethblue' : 'text-slate-600 hover:text-slate-400'}`}
   >
-    {/* Fix: Use React.isValidElement and cast ReactElement with expected props to avoid TypeScript overload errors */}
     {React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: 'w-6 h-6' }) : icon}
     <span className={`text-[10px] font-bold uppercase tracking-tighter ${active ? 'opacity-100' : 'opacity-60'}`}>{label}</span>
     {active && <div className="w-1 h-1 bg-ethblue rounded-full mt-0.5 shadow-[0_0_8px_rgba(60,60,255,0.8)]"></div>}
   </button>
-);
-
-const HistoryPlaceholder = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg 
-    {...props} 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="currentColor" 
-    strokeWidth="2" 
-    strokeLinecap="round" 
-    strokeLinejoin="round"
-  >
-    <path d="M12 8v4l3 3" />
-    <circle cx="12" cy="12" r="9" />
-  </svg>
 );
 
 export default Dashboard;
