@@ -1,14 +1,76 @@
-
 <!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lapore Finance | Secure Wealth Management</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    
+    <!-- PWA Primary Meta Tags -->
+    <title>Lapore Capital | Secure Wealth Management</title>
+    <meta name="title" content="Lapore Capital | Secure Wealth Management">
+    <meta name="description" content="Next-generation decentralized banking and capital management. Secure, fast, and intelligent.">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- Theme Colors -->
+    <meta name="theme-color" content="#3C3CFF" media="(prefers-color-scheme: dark)">
+    <meta name="theme-color" content="#3C3CFF" media="(prefers-color-scheme: light)">
+    <meta name="background-color" content="#050505">
+    
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192x192.png">
+    <link rel="apple-touch-icon" sizes="167x167" href="/icons/icon-192x192.png">
+    
+    <!-- Apple Mobile Web App -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Lapore">
+    
+    <!-- Splash Screens for iOS (optional but recommended) -->
+    <link rel="apple-touch-startup-image" href="/splash/splash-2048x2732.png" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+    <link rel="apple-touch-startup-image" href="/splash/splash-1668x2388.png" media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+    <link rel="apple-touch-startup-image" href="/splash/splash-1536x2048.png" media="(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+    <link rel="apple-touch-startup-image" href="/splash/splash-1284x2778.png" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+    <link rel="apple-touch-startup-image" href="/splash/splash-1170x2532.png" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+    <link rel="apple-touch-startup-image" href="/splash/splash-1125x2436.png" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+    <link rel="apple-touch-startup-image" href="/splash/splash-1242x2688.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+    <link rel="apple-touch-startup-image" href="/splash/splash-750x1334.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+    <link rel="apple-touch-startup-image" href="/splash/splash-828x1792.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+    
+    <!-- Windows Tiles -->
+    <meta name="msapplication-TileColor" content="#3C3CFF">
+    <meta name="msapplication-TileImage" content="/icons/icon-144x144.png">
+    <meta name="msapplication-config" content="/browserconfig.xml">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16x16.png">
+    <link rel="shortcut icon" href="/favicon.ico">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://lapore-capital.vercel.app/">
+    <meta property="og:title" content="Lapore Capital | Secure Wealth Management">
+    <meta property="og:description" content="Next-generation decentralized banking and capital management.">
+    <meta property="og:image" content="/og-image.png">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://lapore-capital.vercel.app/">
+    <meta property="twitter:title" content="Lapore Capital | Secure Wealth Management">
+    <meta property="twitter:description" content="Next-generation decentralized banking and capital management.">
+    <meta property="twitter:image" content="/og-image.png">
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
     <script>
       tailwind.config = {
         darkMode: 'class',
@@ -27,13 +89,21 @@
         }
       }
     </script>
+    
     <style>
         body {
             background-color: #050505;
             color: #f8fafc;
             -webkit-tap-highlight-color: transparent;
+            overscroll-behavior-y: contain;
         }
-        /* Custom scrollbar for a cleaner look */
+        
+        /* Safe area insets for notched devices */
+        body {
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+        }
+        
+        /* Custom scrollbar */
         ::-webkit-scrollbar {
           width: 6px;
         }
@@ -47,23 +117,82 @@
         ::-webkit-scrollbar-thumb:hover {
           background: #333;
         }
+        
+        /* Prevent pull-to-refresh on Chrome Android */
+        body {
+          overscroll-behavior: contain;
+        }
     </style>
-<script type="importmap">
-{
-  "imports": {
-    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
-    "react/": "https://esm.sh/react@^19.2.3/",
-    "react": "https://esm.sh/react@^19.2.3",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "react-router-dom": "https://esm.sh/react-router-dom@^7.11.0",
-    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.89.0"
-  }
-}
-</script>
-<link rel="stylesheet" href="/index.css">
+
+    <script type="importmap">
+    {
+      "imports": {
+        "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
+        "react/": "https://esm.sh/react@^19.2.3/",
+        "react": "https://esm.sh/react@^19.2.3",
+        "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+        "react-router-dom": "https://esm.sh/react-router-dom@^7.11.0",
+        "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.89.0"
+      }
+    }
+    </script>
+    <link rel="stylesheet" href="/index.css">
 </head>
 <body>
     <div id="root"></div>
-<script type="module" src="/index.tsx"></script>
+    
+    <!-- Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(registration => {
+              console.log('✅ Service Worker registered:', registration);
+              
+              // Check for updates every hour
+              setInterval(() => {
+                registration.update();
+              }, 60 * 60 * 1000);
+            })
+            .catch(error => {
+              console.log('❌ Service Worker registration failed:', error);
+            });
+        });
+      }
+      
+      // Handle install prompt
+      let deferredPrompt;
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        console.log('💾 Install prompt ready');
+        
+        // You can show a custom install button here
+        // For now, we'll just log it
+        window.showInstallPrompt = () => {
+          if (deferredPrompt) {
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then((choiceResult) => {
+              if (choiceResult.outcome === 'accepted') {
+                console.log('✅ User installed the app');
+              } else {
+                console.log('❌ User dismissed install');
+              }
+              deferredPrompt = null;
+            });
+          }
+        };
+      });
+      
+      // Track if app was launched as installed PWA
+      window.addEventListener('DOMContentLoaded', () => {
+        if (window.matchMedia('(display-mode: standalone)').matches) {
+          console.log('🚀 Running as installed PWA');
+          document.body.classList.add('standalone');
+        }
+      });
+    </script>
+    
+    <script type="module" src="/index.tsx"></script>
 </body>
 </html>

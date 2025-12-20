@@ -1,6 +1,7 @@
 import React from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from './src/context/ProtectedRoute';
+import { InstallPrompt } from './InstallPrompt';
 import AuthPage from './pages/AuthPage';
 import Dashboard from './pages/Dashboard';
 
@@ -34,6 +35,9 @@ const App: React.FC = () => {
           element={<Navigate to="/auth" replace />} 
         />
       </Routes>
+      
+      {/* PWA Install Prompt */}
+      <InstallPrompt />
     </HashRouter>
   );
 };
