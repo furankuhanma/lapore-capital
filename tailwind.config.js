@@ -1,11 +1,8 @@
-/** @type {import('tailwindcss').Config} */
 export default {
-content: [
-  "./index.html",
-  "./src/**/*.{js,ts,jsx,tsx}"
-]
-
-,
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}"  // ✅ Scans all src files
+  ],
   theme: {
     extend: {
       colors: {
@@ -15,10 +12,6 @@ content: [
         ethblue: '#3C3CFF',
         'ethblue-hover': '#3232E5',
       },
-      fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-      },
     },
   },
-  plugins: [],
 }

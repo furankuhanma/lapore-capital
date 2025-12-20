@@ -1,8 +1,7 @@
-
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { AuthMode } from '../types';
-import { Lock, Mail, User, ShieldCheck, ChevronRight, Loader2, Cpu } from 'lucide-react';
+import { Lock, Mail, User, ChevronRight, Loader2, Cpu } from 'lucide-react';
 
 const AuthPage: React.FC = () => {
   const [mode, setMode] = useState<AuthMode>('login');
@@ -38,6 +37,7 @@ const AuthPage: React.FC = () => {
                 id: data.user.id,
                 full_name: fullName,
                 username: username,
+                balance: 0,
                 created_at: new Date().toISOString(),
               },
             ]);
