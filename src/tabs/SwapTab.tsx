@@ -447,19 +447,6 @@ const SwapTab: React.FC<SwapTabProps> = ({ currentUser, onRefresh }) => {
             </>
           )}
         </button>
-
-        {/* Info Banner */}
-        <div className="bg-blue-500/10 border border-blue-500/20 rounded-2xl p-4 flex items-start gap-3">
-          <Info className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="text-blue-400 text-sm font-medium">
-              Demo Mode Active
-            </p>
-            <p className="text-blue-400/70 text-xs mt-1">
-              Add your VITE_COINGECKO_API_KEY to .env for live prices. Currently using demo data.
-            </p>
-          </div>
-        </div>
       </div>
 
       {/* Token Selection Modal */}
