@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../src/context/AuthContext';
 import { supabase } from '../src/context/lib/supabase';
 import { Profile } from '../src/context/types';
-import {Send, QrCode, DollarSign, TrendingDown, Banknote, BanknoteArrowDown, BanknoteArrowUpIcon} from 'lucide-react';
+import {Send, QrCode, DollarSign, TrendingDown, Banknote, BanknoteArrowDown, BanknoteArrowUpIcon, RotateCcw, Clock, Layers} from 'lucide-react';
 import { 
   LogOut, 
   Wallet, 
@@ -216,9 +216,9 @@ const Dashboard: React.FC = () => {
       {/* Bottom Navigation */}
       <nav className="fixed bottom-0 inset-x-0 h-20 bg-darkbg/90 backdrop-blur-2xl border-t border-white/5 flex items-center justify-around px-4 z-40 lg:hidden">
         <NavTab icon={<Wallet />} label="Wallet" active />
-        <NavTab icon={<LayoutGrid />} label="Assets" />
+        <NavTab icon={<Layers />} label="Assets" />
         <NavTab icon={<Repeat />} label="Swap" />
-        <NavTab icon={<Zap />} label="Activity" />
+        <NavTab icon={<Clock />} label="Activity" />
         <NavTab icon={<Settings />} label="Settings" />
       </nav>
 
