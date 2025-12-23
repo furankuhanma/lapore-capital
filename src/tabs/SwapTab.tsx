@@ -1,48 +1,130 @@
-import React, { useState } from 'react';
-import { ArrowDown, Settings, Info, Loader2, AlertCircle } from 'lucide-react';
-import { Profile } from '../../src/context/types';
+import React, { useState, useEffect } from 'react';
+import { ArrowDown, Settings, Info, Loader2, AlertCircle, Search, X, ChevronDown } from 'lucide-react';
+
+interface Profile {
+  balance: number;
+  cryptoBalances?: { [key: string]: number };
+}
 
 interface SwapTabProps {
   currentUser: Profile;
   onRefresh?: () => void;
 }
 
-interface SwapAsset {
+interface Token {
   symbol: string;
   name: string;
-  balance: number;
   icon: string;
+  coingeckoId: string;
+  balance: number;
+}
+
+interface TokenPrice {
+  usd: number;
+  usd_24h_change: number;
 }
 
 const SwapTab: React.FC<SwapTabProps> = ({ currentUser, onRefresh }) => {
-  const [fromAsset, setFromAsset] = useState<SwapAsset>({
-    symbol: 'PHP',
-    name: 'Philippine Peso',
-    balance: currentUser.balance,
-    icon: '₱'
-  });
-  
-  const [toAsset, setToAsset] = useState<SwapAsset | null>(null);
+  // Available tokens with CoinGecko IDs
+  const availableTokens: Token[] = [
+    { symbol: 'SOL', name: 'Solana', icon: '◎', coingeckoId: 'solana', balance: 0 },
+    { symbol: 'USDC', name: 'USD Coin', icon: '💵', coingeckoId: 'usd-coin', balance: 0 },
+    { symbol: 'USDT', name: 'Tether', icon: '₮', coingeckoId: 'tether', balance: 0 },
+    { symbol: 'ETH', name: 'Ethereum', icon: 'Ξ', coingeckoId: 'ethereum', balance: 0 },
+    { symbol: 'BTC', name: 'Bitcoin', icon: '₿', coingeckoId: 'bitcoin', balance: 0 },
+    { symbol: 'WBTC', name: 'Wrapped Bitcoin', icon: '₿', coingeckoId: 'wrapped-bitcoin', balance: 0 },
+    { symbol: 'RAY', name: 'Raydium', icon: '⚡', coingeckoId: 'raydium', balance: 0 },
+    { symbol: 'ORCA', name: 'Orca', icon: '🐋', coingeckoId: 'orca', balance: 0 },
+  ];
+
+  const [fromToken, setFromToken] = useState<Token>(availableTokens[2]); // USDT
+  const [toToken, setToToken] = useState<Token>(availableTokens[4]); // BTC
   const [fromAmount, setFromAmount] = useState('');
   const [toAmount, setToAmount] = useState('');
   const [loading, setLoading] = useState(false);
-  const [slippage, setSlippage] = useState(0.5);
+  const [slippage, setSlippage] = useState(1);
   const [showSlippageSettings, setShowSlippageSettings] = useState(false);
+  const [showTokenModal, setShowTokenModal] = useState(false);
+  const [selectingToken, setSelectingToken] = useState<'from' | 'to'>('from');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [prices, setPrices] = useState<{ [key: string]: TokenPrice }>({});
+  const [priceLoading, setPriceLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Placeholder assets - will be replaced with real data
-  const availableAssets: SwapAsset[] = [
-    { symbol: 'PHP', name: 'Philippine Peso', balance: currentUser.balance, icon: '₱' },
-    { symbol: 'BTC', name: 'Bitcoin', balance: 0, icon: '₿' },
-    { symbol: 'ETH', name: 'Ethereum', balance: 0, icon: 'Ξ' },
-    { symbol: 'USDT', name: 'Tether', balance: 0, icon: '$' },
-  ];
+  // Fetch prices from CoinGecko
+  useEffect(() => {
+    fetchPrices();
+    const interval = setInterval(fetchPrices, 30000); // Update every 30 seconds
+    return () => clearInterval(interval);
+  }, []);
 
-  const handleSwapAssets = () => {
-    if (!toAsset) return;
+  const fetchPrices = async () => {
+    setPriceLoading(true);
+    setError(null);
     
-    const temp = fromAsset;
-    setFromAsset(toAsset);
-    setToAsset(temp);
+    try {
+      const ids = availableTokens.map(t => t.coingeckoId).join(',');
+      const apiKey = import.meta.env.VITE_COINGECKO_API_KEY || '';
+      
+      // CoinGecko API endpoint
+      const url = apiKey 
+        ? `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true&x_cg_demo_api_key=${apiKey}`
+        : `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`;
+      
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      setPrices(data);
+    } catch (err) {
+      console.error('Failed to fetch prices:', err);
+      setError('Failed to load prices. Using demo mode.');
+      
+      // Fallback demo prices
+      const demoData: { [key: string]: TokenPrice } = {
+        'solana': { usd: 238.50, usd_24h_change: 2.5 },
+        'usd-coin': { usd: 1.00, usd_24h_change: 0.01 },
+        'tether': { usd: 1.00, usd_24h_change: 0.0 },
+        'ethereum': { usd: 3850.25, usd_24h_change: 1.8 },
+        'bitcoin': { usd: 98500.00, usd_24h_change: 3.2 },
+        'wrapped-bitcoin': { usd: 98450.00, usd_24h_change: 3.1 },
+        'raydium': { usd: 5.45, usd_24h_change: -1.2 },
+        'orca': { usd: 4.20, usd_24h_change: 0.8 },
+      };
+      setPrices(demoData);
+    } finally {
+      setPriceLoading(false);
+    }
+  };
+
+  // Calculate exchange when fromAmount changes
+  useEffect(() => {
+    if (fromAmount && !isNaN(parseFloat(fromAmount))) {
+      calculateToAmount(fromAmount);
+    } else {
+      setToAmount('');
+    }
+  }, [fromAmount, fromToken, toToken, prices]);
+
+  const calculateToAmount = (amount: string) => {
+    const fromPrice = prices[fromToken.coingeckoId]?.usd || 0;
+    const toPrice = prices[toToken.coingeckoId]?.usd || 0;
+    
+    if (fromPrice && toPrice) {
+      const fromValue = parseFloat(amount);
+      const toValue = (fromValue * fromPrice) / toPrice;
+      const withSlippage = toValue * (1 - slippage / 100);
+      setToAmount(withSlippage.toFixed(8));
+    }
+  };
+
+  const handleSwapTokens = () => {
+    const temp = fromToken;
+    setFromToken(toToken);
+    setToToken(temp);
     
     // Swap amounts
     const tempAmount = fromAmount;
@@ -51,224 +133,346 @@ const SwapTab: React.FC<SwapTabProps> = ({ currentUser, onRefresh }) => {
   };
 
   const handleFromAmountChange = (value: string) => {
-    setFromAmount(value);
-    
-    // Calculate estimated toAmount (placeholder calculation)
-    if (value && !isNaN(parseFloat(value))) {
-      const estimated = parseFloat(value) * 0.95; // Placeholder conversion rate
-      setToAmount(estimated.toFixed(6));
-    } else {
-      setToAmount('');
+    // Allow only numbers and decimals
+    if (value === '' || /^\d*\.?\d*$/.test(value)) {
+      setFromAmount(value);
     }
   };
 
-  const handleSwap = async () => {
-    if (!toAsset || !fromAmount || parseFloat(fromAmount) <= 0) {
-      return;
-    }
+  const handleMaxClick = () => {
+    setFromAmount(fromToken.balance.toString());
+  };
 
+  const handleTokenSelect = (token: Token) => {
+    if (selectingToken === 'from') {
+      if (token.symbol === toToken.symbol) {
+        setToToken(fromToken);
+      }
+      setFromToken(token);
+    } else {
+      if (token.symbol === fromToken.symbol) {
+        setFromToken(toToken);
+      }
+      setToToken(token);
+    }
+    setShowTokenModal(false);
+    setSearchQuery('');
+  };
+
+  const openTokenModal = (type: 'from' | 'to') => {
+    setSelectingToken(type);
+    setShowTokenModal(true);
+  };
+
+  const filteredTokens = availableTokens.filter(token =>
+    token.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    token.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const handleSwap = async () => {
+    if (!fromAmount || parseFloat(fromAmount) <= 0) return;
+    
     setLoading(true);
     
-    // Placeholder for swap logic
+    // Simulate swap transaction
     setTimeout(() => {
       setLoading(false);
-      alert('Swap functionality will be implemented soon!');
+      alert(`Swap executed!\n${fromAmount} ${fromToken.symbol} → ${toAmount} ${toToken.symbol}`);
+      setFromAmount('');
+      setToAmount('');
+      onRefresh?.();
     }, 2000);
   };
 
-  return (
-    <div className="space-y-6 pb-24">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-white">Swap</h2>
-        <button
-          onClick={() => setShowSlippageSettings(!showSlippageSettings)}
-          className="p-2 rounded-full hover:bg-white/5 transition-colors"
-        >
-          <Settings className="w-5 h-5 text-slate-400" />
-        </button>
-      </div>
+  const getUsdValue = (amount: string, token: Token) => {
+    if (!amount || isNaN(parseFloat(amount))) return '$0.00';
+    const price = prices[token.coingeckoId]?.usd || 0;
+    const value = parseFloat(amount) * price;
+    return `$${value.toFixed(2)}`;
+  };
 
-      {/* Slippage Settings */}
-      {showSlippageSettings && (
-        <div className="bg-cardbg border border-white/5 rounded-2xl p-4 animate-in slide-in-from-top-2 duration-200">
-          <h3 className="text-sm font-bold text-white mb-3">Slippage Tolerance</h3>
-          <div className="grid grid-cols-4 gap-2">
-            {[0.1, 0.5, 1.0, 3.0].map((value) => (
-              <button
-                key={value}
-                onClick={() => setSlippage(value)}
-                className={`py-2 rounded-xl font-bold text-sm transition-colors ${
-                  slippage === value
-                    ? 'bg-ethblue text-white'
-                    : 'bg-white/5 text-slate-400 hover:bg-white/10'
-                }`}
-              >
-                {value}%
-              </button>
-            ))}
+  const getExchangeRate = () => {
+    const fromPrice = prices[fromToken.coingeckoId]?.usd || 0;
+    const toPrice = prices[toToken.coingeckoId]?.usd || 0;
+    if (!fromPrice || !toPrice) return '...';
+    const rate = fromPrice / toPrice;
+    return rate.toFixed(8);
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 p-6">
+      <div className="max-w-lg mx-auto space-y-4">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold text-white">Swap Tokens</h2>
+          <div className="flex items-center gap-2">
+            <div className="text-xs text-slate-400 bg-slate-800 px-3 py-1 rounded-full">
+              {slippage}% Slippage
+            </div>
+            <button
+              onClick={() => setShowSlippageSettings(!showSlippageSettings)}
+              className="p-2 rounded-full hover:bg-white/5 transition-colors"
+            >
+              <Settings className="w-5 h-5 text-slate-400" />
+            </button>
           </div>
         </div>
-      )}
 
-      {/* Swap Container */}
-      <div className="space-y-2">
-        {/* From Section */}
-        <div className="bg-cardbg border border-white/5 rounded-2xl p-4">
-          <div className="flex items-center justify-between mb-3">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-              From
-            </label>
+        {/* Slippage Settings */}
+        {showSlippageSettings && (
+          <div className="bg-slate-800 border border-slate-700 rounded-2xl p-4 animate-in slide-in-from-top">
+            <h3 className="text-sm font-bold text-white mb-3">Slippage Tolerance</h3>
+            <div className="grid grid-cols-4 gap-2">
+              {[0.1, 0.5, 1.0, 3.0].map((value) => (
+                <button
+                  key={value}
+                  onClick={() => {
+                    setSlippage(value);
+                    setShowSlippageSettings(false);
+                  }}
+                  className={`py-2 rounded-xl font-bold text-sm transition-colors ${
+                    slippage === value
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                  }`}
+                >
+                  {value}%
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* You Pay Section */}
+        <div className="bg-slate-800 border border-slate-700 rounded-2xl p-4">
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-sm font-medium text-slate-400">You Pay</label>
             <span className="text-xs text-slate-500">
-              Balance: {fromAsset.balance.toFixed(2)} {fromAsset.symbol}
+              Balance: {fromToken.balance.toFixed(4)} {fromToken.symbol}
             </span>
           </div>
           
-          <div className="flex items-center gap-3">
-            <button className="flex items-center gap-2 bg-white/5 hover:bg-white/10 px-3 py-2 rounded-xl transition-colors">
-              <span className="text-2xl">{fromAsset.icon}</span>
-              <span className="font-bold text-white">{fromAsset.symbol}</span>
+          <div className="flex items-center gap-3 mb-2">
+            <button
+              onClick={() => openTokenModal('from')}
+              className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-xl transition-colors"
+            >
+              <span className="text-2xl">{fromToken.icon}</span>
+              <span className="font-bold text-white">{fromToken.symbol}</span>
+              <ChevronDown className="w-4 h-4 text-slate-400" />
             </button>
             
             <input
-              type="number"
+              type="text"
               value={fromAmount}
               onChange={(e) => handleFromAmountChange(e.target.value)}
-              placeholder="0.00"
-              className="flex-1 bg-transparent text-right text-2xl font-bold text-white placeholder-slate-700 focus:outline-none"
+              placeholder="0"
+              className="flex-1 bg-transparent text-right text-3xl font-bold text-white placeholder-slate-600 focus:outline-none"
             />
           </div>
-          
-          <button
-            onClick={() => handleFromAmountChange(fromAsset.balance.toString())}
-            className="text-xs text-ethblue font-bold mt-2 hover:text-white transition-colors"
-          >
-            Max
-          </button>
+
+          <div className="flex items-center justify-between">
+            <button
+              onClick={handleMaxClick}
+              className="text-xs text-blue-400 font-bold hover:text-blue-300 transition-colors"
+            >
+              Max
+            </button>
+            <span className="text-sm text-slate-500">
+              {getUsdValue(fromAmount, fromToken)}
+            </span>
+          </div>
         </div>
 
-        {/* Swap Button */}
-        <div className="flex justify-center -my-1 relative z-10">
+        {/* Swap Arrow Button */}
+        <div className="flex justify-center -my-2 relative z-10">
           <button
-            onClick={handleSwapAssets}
-            disabled={!toAsset}
-            className="w-10 h-10 bg-cardbg border border-white/10 rounded-full flex items-center justify-center hover:bg-white/5 hover:border-ethblue transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={handleSwapTokens}
+            className="w-12 h-12 bg-slate-800 border-4 border-slate-900 rounded-full flex items-center justify-center hover:bg-slate-700 transition-all"
           >
             <ArrowDown className="w-5 h-5 text-white" />
           </button>
         </div>
 
-        {/* To Section */}
-        <div className="bg-cardbg border border-white/5 rounded-2xl p-4">
-          <div className="flex items-center justify-between mb-3">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-              To
-            </label>
-            {toAsset && (
-              <span className="text-xs text-slate-500">
-                Balance: {toAsset.balance.toFixed(2)} {toAsset.symbol}
-              </span>
-            )}
+        {/* You Receive Section */}
+        <div className="bg-slate-800 border border-slate-700 rounded-2xl p-4">
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-sm font-medium text-slate-400">You Receive</label>
+            <span className="text-xs text-slate-500">
+              Balance: {toToken.balance.toFixed(4)} {toToken.symbol}
+            </span>
           </div>
           
-          <div className="flex items-center gap-3">
-            {toAsset ? (
-              <button className="flex items-center gap-2 bg-white/5 hover:bg-white/10 px-3 py-2 rounded-xl transition-colors">
-                <span className="text-2xl">{toAsset.icon}</span>
-                <span className="font-bold text-white">{toAsset.symbol}</span>
-              </button>
-            ) : (
-              <button 
-                onClick={() => setToAsset(availableAssets[1])}
-                className="flex items-center gap-2 bg-white/5 hover:bg-white/10 px-3 py-2 rounded-xl transition-colors"
-              >
-                <span className="font-bold text-slate-500">Select token</span>
-              </button>
-            )}
+          <div className="flex items-center gap-3 mb-2">
+            <button
+              onClick={() => openTokenModal('to')}
+              className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-xl transition-colors"
+            >
+              <span className="text-2xl">{toToken.icon}</span>
+              <span className="font-bold text-white">{toToken.symbol}</span>
+              <ChevronDown className="w-4 h-4 text-slate-400" />
+            </button>
             
             <input
               type="text"
               value={toAmount}
               readOnly
-              placeholder="0.00"
-              className="flex-1 bg-transparent text-right text-2xl font-bold text-white placeholder-slate-700 focus:outline-none"
+              placeholder="0"
+              className="flex-1 bg-transparent text-right text-3xl font-bold text-white placeholder-slate-600 focus:outline-none"
             />
           </div>
-        </div>
-      </div>
 
-      {/* Rate Info */}
-      {fromAmount && toAmount && toAsset && (
-        <div className="bg-cardbg border border-white/5 rounded-2xl p-4 space-y-3">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-slate-500">Rate</span>
-            <span className="text-white font-medium">
-              1 {fromAsset.symbol} ≈ 0.95 {toAsset.symbol}
-            </span>
-          </div>
-          
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-slate-500">Network Fee</span>
-            <span className="text-white font-medium">~₱5.00</span>
-          </div>
-          
-          <div className="flex items-center justify-between text-sm pt-3 border-t border-white/5">
-            <span className="text-slate-500">You'll receive</span>
-            <span className="text-white font-bold">
-              {toAmount} {toAsset.symbol}
+          <div className="flex justify-end">
+            <span className="text-sm text-slate-500">
+              {getUsdValue(toAmount, toToken)}
             </span>
           </div>
         </div>
-      )}
 
-      {/* Info Banner */}
-      <div className="bg-blue-500/10 border border-blue-500/20 rounded-2xl p-4 flex items-start gap-3">
-        <Info className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
-        <div>
-          <p className="text-blue-400 text-sm font-medium">
-            Swap Feature Coming Soon
-          </p>
-          <p className="text-blue-400/70 text-xs mt-1">
-            This interface is ready for when swap functionality is implemented. Connect your preferred exchange API to enable trading.
-          </p>
-        </div>
-      </div>
-
-      {/* Swap Button */}
-      <button
-        onClick={handleSwap}
-        disabled={!toAsset || !fromAmount || parseFloat(fromAmount) <= 0 || loading}
-        className="w-full bg-ethblue hover:bg-ethblue/90 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-bold py-4 rounded-2xl transition-all flex items-center justify-center gap-2"
-      >
-        {loading ? (
-          <>
-            <Loader2 className="w-5 h-5 animate-spin" />
-            Swapping...
-          </>
-        ) : (
-          <>
-            {!toAsset || !fromAmount || parseFloat(fromAmount) <= 0
-              ? 'Enter an amount'
-              : `Swap ${fromAsset.symbol} for ${toAsset.symbol}`}
-          </>
+        {/* Exchange Rate Info */}
+        {fromAmount && toAmount && (
+          <div className="bg-slate-800 border border-slate-700 rounded-2xl p-4 space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-slate-400">Price</span>
+              <span className="text-white font-medium">
+                1 {fromToken.symbol} ≈ {getExchangeRate()} {toToken.symbol}
+              </span>
+            </div>
+            
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-slate-400">Provider</span>
+              <span className="text-white font-medium">
+                Lifinity V2 via Jupiter →
+              </span>
+            </div>
+          </div>
         )}
-      </button>
 
-      {/* Warning */}
-      {fromAmount && parseFloat(fromAmount) > fromAsset.balance && (
-        <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
-          <p className="text-red-400 text-sm">
-            Insufficient balance. You have {fromAsset.balance.toFixed(2)} {fromAsset.symbol}
-          </p>
+        {/* Price Loading Indicator */}
+        {priceLoading && (
+          <div className="flex items-center justify-center gap-2 text-slate-400 text-sm">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span>Updating prices...</span>
+          </div>
+        )}
+
+        {/* Error Message */}
+        {error && (
+          <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-2xl p-3 flex items-start gap-2">
+            <AlertCircle className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" />
+            <p className="text-yellow-400 text-xs">{error}</p>
+          </div>
+        )}
+
+        {/* Swap Button */}
+        <button
+          onClick={handleSwap}
+          disabled={!fromAmount || parseFloat(fromAmount) <= 0 || parseFloat(fromAmount) > fromToken.balance || loading}
+          className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 disabled:from-slate-700 disabled:to-slate-700 disabled:cursor-not-allowed text-white font-bold py-4 rounded-2xl transition-all flex items-center justify-center gap-2"
+        >
+          {loading ? (
+            <>
+              <Loader2 className="w-5 h-5 animate-spin" />
+              Swapping...
+            </>
+          ) : (
+            <>
+              {!fromAmount || parseFloat(fromAmount) <= 0
+                ? 'Enter an amount'
+                : parseFloat(fromAmount) > fromToken.balance
+                ? 'Insufficient balance'
+                : 'Review Swap'}
+            </>
+          )}
+        </button>
+      </div>
+
+      {/* Token Selection Modal */}
+      {showTokenModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-4">
+          <div className="bg-slate-800 rounded-3xl w-full max-w-md max-h-[80vh] overflow-hidden animate-in slide-in-from-bottom sm:slide-in-from-bottom-0">
+            {/* Modal Header */}
+            <div className="p-4 border-b border-slate-700">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold text-white">Select Token</h3>
+                <button
+                  onClick={() => {
+                    setShowTokenModal(false);
+                    setSearchQuery('');
+                  }}
+                  className="p-2 hover:bg-slate-700 rounded-full transition-colors"
+                >
+                  <X className="w-5 h-5 text-slate-400" />
+                </button>
+              </div>
+              
+              {/* Search Bar */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search tokens..."
+                  className="w-full bg-slate-700 text-white pl-10 pr-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            {/* Token List */}
+            <div className="overflow-y-auto max-h-96">
+              {filteredTokens.map((token) => {
+                const price = prices[token.coingeckoId];
+                const isSelected = token.symbol === (selectingToken === 'from' ? fromToken.symbol : toToken.symbol);
+                
+                return (
+                  <button
+                    key={token.symbol}
+                    onClick={() => handleTokenSelect(token)}
+                    disabled={isSelected}
+                    className={`w-full p-4 flex items-center justify-between hover:bg-slate-700 transition-colors ${
+                      isSelected ? 'bg-slate-700/50 cursor-not-allowed' : ''
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-3xl">{token.icon}</span>
+                      <div className="text-left">
+                        <div className="font-bold text-white">{token.symbol}</div>
+                        <div className="text-xs text-slate-400">{token.name}</div>
+                      </div>
+                    </div>
+                    
+                    <div className="text-right">
+                      {price ? (
+                        <>
+                          <div className="font-medium text-white">
+                            ${price.usd.toLocaleString()}
+                          </div>
+                          <div className={`text-xs ${
+                            price.usd_24h_change >= 0 ? 'text-green-400' : 'text-red-400'
+                          }`}>
+                            {price.usd_24h_change >= 0 ? '+' : ''}
+                            {price.usd_24h_change.toFixed(2)}%
+                          </div>
+                        </>
+                      ) : (
+                        <div className="text-slate-500 text-sm">Loading...</div>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+              
+              {filteredTokens.length === 0 && (
+                <div className="p-8 text-center text-slate-400">
+                  No tokens found
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
-
-      {/* Footer Info */}
-      <div className="text-center text-xs text-slate-600">
-        <p>Swaps are powered by decentralized exchanges</p>
-        <p className="mt-1">Always verify transaction details before confirming</p>
-      </div>
     </div>
   );
 };
