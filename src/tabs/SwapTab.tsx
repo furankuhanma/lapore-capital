@@ -248,20 +248,20 @@ const SwapTab: React.FC<SwapTabProps> = ({ currentUser, onRefresh }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 p-6">
-      <div className="max-w-lg mx-auto space-y-4">
+    <div className="w-full min-h-screen p-4 sm:p-6 overflow-x-hidden">
+      <div className="max-w-md mx-auto space-y-4 w-full">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-white">Swap Tokens</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-white">Swap Tokens</h2>
           <div className="flex items-center gap-2">
-            <div className="text-xs text-slate-400 bg-slate-800 px-3 py-1 rounded-full">
+            <div className="text-xs text-slate-400 bg-slate-800 px-2 sm:px-3 py-1 rounded-full whitespace-nowrap">
               {slippage}% Slippage
             </div>
             <button
               onClick={() => setShowSlippageSettings(!showSlippageSettings)}
-              className="p-2 rounded-full hover:bg-white/5 transition-colors"
+              className="p-2 rounded-full hover:bg-white/5 transition-colors flex-shrink-0"
             >
-              <Settings className="w-5 h-5 text-slate-400" />
+              <Settings className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400" />
             </button>
           </div>
         </div>
@@ -293,28 +293,28 @@ const SwapTab: React.FC<SwapTabProps> = ({ currentUser, onRefresh }) => {
 
         {/* You Pay Section */}
         <div className="bg-slate-800 border border-slate-700 rounded-2xl p-4">
-          <div className="flex items-center justify-between mb-2">
-            <label className="text-sm font-medium text-slate-400">You Pay</label>
-            <span className="text-xs text-slate-500">
+          <div className="flex items-center justify-between mb-3">
+            <label className="text-xs sm:text-sm font-medium text-slate-400">You Pay</label>
+            <span className="text-xs text-slate-500 truncate max-w-[180px]">
               Balance: {fromToken.balance.toFixed(4)} {fromToken.symbol}
             </span>
           </div>
           
-          <div className="flex items-center gap-3 mb-2">
+          <div className="flex items-center gap-2 sm:gap-3 mb-2">
             <button
               onClick={() => openTokenModal('from')}
-              className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-xl transition-colors"
+              className="flex items-center gap-1.5 sm:gap-2 bg-slate-700 hover:bg-slate-600 px-2 sm:px-3 py-2 rounded-xl transition-colors flex-shrink-0"
             >
               <img 
                 src={fromToken.logoUrl} 
                 alt={fromToken.symbol}
-                className="w-8 h-8 rounded-full"
+                className="w-6 h-6 sm:w-8 sm:h-8 rounded-full flex-shrink-0"
                 onError={(e) => {
                   e.currentTarget.src = 'https://via.placeholder.com/32/1e293b/ffffff?text=' + fromToken.symbol;
                 }}
               />
-              <span className="font-bold text-white">{fromToken.symbol}</span>
-              <ChevronDown className="w-4 h-4 text-slate-400" />
+              <span className="font-bold text-white text-sm sm:text-base">{fromToken.symbol}</span>
+              <ChevronDown className="w-3 h-3 sm:w-4 sm:h-4 text-slate-400" />
             </button>
             
             <input
@@ -322,7 +322,7 @@ const SwapTab: React.FC<SwapTabProps> = ({ currentUser, onRefresh }) => {
               value={fromAmount}
               onChange={(e) => handleFromAmountChange(e.target.value)}
               placeholder="0"
-              className="flex-1 bg-transparent text-right text-3xl font-bold text-white placeholder-slate-600 focus:outline-none"
+              className="flex-1 bg-transparent text-right text-xl sm:text-3xl font-bold text-white placeholder-slate-600 focus:outline-none min-w-0"
             />
           </div>
 
@@ -333,7 +333,7 @@ const SwapTab: React.FC<SwapTabProps> = ({ currentUser, onRefresh }) => {
             >
               Max
             </button>
-            <span className="text-sm text-slate-500">
+            <span className="text-xs sm:text-sm text-slate-500">
               {getUsdValue(fromAmount, fromToken)}
             </span>
           </div>
@@ -343,36 +343,36 @@ const SwapTab: React.FC<SwapTabProps> = ({ currentUser, onRefresh }) => {
         <div className="flex justify-center -my-2 relative z-10">
           <button
             onClick={handleSwapTokens}
-            className="w-12 h-12 bg-slate-800 border-4 border-slate-900 rounded-full flex items-center justify-center hover:bg-slate-700 transition-all"
+            className="w-10 h-10 sm:w-12 sm:h-12 bg-slate-800 border-4 border-slate-900 rounded-full flex items-center justify-center hover:bg-slate-700 transition-all flex-shrink-0"
           >
-            <ArrowDown className="w-5 h-5 text-white" />
+            <ArrowDown className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
           </button>
         </div>
 
         {/* You Receive Section */}
         <div className="bg-slate-800 border border-slate-700 rounded-2xl p-4">
-          <div className="flex items-center justify-between mb-2">
-            <label className="text-sm font-medium text-slate-400">You Receive</label>
-            <span className="text-xs text-slate-500">
+          <div className="flex items-center justify-between mb-3">
+            <label className="text-xs sm:text-sm font-medium text-slate-400">You Receive</label>
+            <span className="text-xs text-slate-500 truncate max-w-[180px]">
               Balance: {toToken.balance.toFixed(4)} {toToken.symbol}
             </span>
           </div>
           
-          <div className="flex items-center gap-3 mb-2">
+          <div className="flex items-center gap-2 sm:gap-3 mb-2">
             <button
               onClick={() => openTokenModal('to')}
-              className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-xl transition-colors"
+              className="flex items-center gap-1.5 sm:gap-2 bg-slate-700 hover:bg-slate-600 px-2 sm:px-3 py-2 rounded-xl transition-colors flex-shrink-0"
             >
               <img 
                 src={toToken.logoUrl} 
                 alt={toToken.symbol}
-                className="w-8 h-8 rounded-full"
+                className="w-6 h-6 sm:w-8 sm:h-8 rounded-full flex-shrink-0"
                 onError={(e) => {
                   e.currentTarget.src = 'https://via.placeholder.com/32/1e293b/ffffff?text=' + toToken.symbol;
                 }}
               />
-              <span className="font-bold text-white">{toToken.symbol}</span>
-              <ChevronDown className="w-4 h-4 text-slate-400" />
+              <span className="font-bold text-white text-sm sm:text-base">{toToken.symbol}</span>
+              <ChevronDown className="w-3 h-3 sm:w-4 sm:h-4 text-slate-400" />
             </button>
             
             <input
@@ -380,12 +380,12 @@ const SwapTab: React.FC<SwapTabProps> = ({ currentUser, onRefresh }) => {
               value={toAmount}
               readOnly
               placeholder="0"
-              className="flex-1 bg-transparent text-right text-3xl font-bold text-white placeholder-slate-600 focus:outline-none"
+              className="flex-1 bg-transparent text-right text-xl sm:text-3xl font-bold text-white placeholder-slate-600 focus:outline-none min-w-0 break-all"
             />
           </div>
 
           <div className="flex justify-end">
-            <span className="text-sm text-slate-500">
+            <span className="text-xs sm:text-sm text-slate-500">
               {getUsdValue(toAmount, toToken)}
             </span>
           </div>
@@ -394,16 +394,16 @@ const SwapTab: React.FC<SwapTabProps> = ({ currentUser, onRefresh }) => {
         {/* Exchange Rate Info */}
         {fromAmount && toAmount && (
           <div className="bg-slate-800 border border-slate-700 rounded-2xl p-4 space-y-2">
-            <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center justify-between text-xs sm:text-sm">
               <span className="text-slate-400">Price</span>
-              <span className="text-white font-medium">
+              <span className="text-white font-medium text-right break-all max-w-[60%]">
                 1 {fromToken.symbol} ≈ {getExchangeRate()} {toToken.symbol}
               </span>
             </div>
             
-            <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center justify-between text-xs sm:text-sm">
               <span className="text-slate-400">Provider</span>
-              <span className="text-white font-medium">
+              <span className="text-white font-medium truncate max-w-[60%]">
                 Lifinity V2 via Jupiter →
               </span>
             </div>
@@ -412,7 +412,7 @@ const SwapTab: React.FC<SwapTabProps> = ({ currentUser, onRefresh }) => {
 
         {/* Price Loading Indicator */}
         {priceLoading && (
-          <div className="flex items-center justify-center gap-2 text-slate-400 text-sm">
+          <div className="flex items-center justify-center gap-2 text-slate-400 text-xs sm:text-sm">
             <Loader2 className="w-4 h-4 animate-spin" />
             <span>Updating prices...</span>
           </div>
@@ -430,7 +430,7 @@ const SwapTab: React.FC<SwapTabProps> = ({ currentUser, onRefresh }) => {
         <button
           onClick={handleSwap}
           disabled={!fromAmount || parseFloat(fromAmount) <= 0 || parseFloat(fromAmount) > fromToken.balance || loading}
-          className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 disabled:from-slate-700 disabled:to-slate-700 disabled:cursor-not-allowed text-white font-bold py-4 rounded-2xl transition-all flex items-center justify-center gap-2"
+          className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 disabled:from-slate-700 disabled:to-slate-700 disabled:cursor-not-allowed text-white font-bold py-3 sm:py-4 rounded-2xl transition-all flex items-center justify-center gap-2 text-sm sm:text-base"
         >
           {loading ? (
             <>
@@ -464,12 +464,12 @@ const SwapTab: React.FC<SwapTabProps> = ({ currentUser, onRefresh }) => {
 
       {/* Token Selection Modal */}
       {showTokenModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-4">
-          <div className="bg-slate-800 rounded-3xl w-full max-w-md max-h-[80vh] overflow-hidden animate-in slide-in-from-bottom sm:slide-in-from-bottom-0">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+          <div className="bg-slate-800 rounded-t-3xl sm:rounded-3xl w-full max-w-md max-h-[85vh] sm:max-h-[80vh] overflow-hidden animate-in slide-in-from-bottom sm:slide-in-from-bottom-0">
             {/* Modal Header */}
             <div className="p-4 border-b border-slate-700">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold text-white">Select Token</h3>
+                <h3 className="text-lg sm:text-xl font-bold text-white">Select Token</h3>
                 <button
                   onClick={() => {
                     setShowTokenModal(false);
@@ -496,7 +496,7 @@ const SwapTab: React.FC<SwapTabProps> = ({ currentUser, onRefresh }) => {
             </div>
 
             {/* Token List */}
-            <div className="overflow-y-auto max-h-96">
+            <div className="overflow-y-auto" style={{ maxHeight: 'calc(85vh - 140px)' }}>
               {filteredTokens.map((token) => {
                 const price = prices[token.coingeckoId];
                 const isSelected = token.symbol === (selectingToken === 'from' ? fromToken.symbol : toToken.symbol);
@@ -510,26 +510,26 @@ const SwapTab: React.FC<SwapTabProps> = ({ currentUser, onRefresh }) => {
                       isSelected ? 'bg-slate-700/50 cursor-not-allowed' : ''
                     }`}
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
                       <img 
                         src={token.logoUrl} 
                         alt={token.symbol}
-                        className="w-10 h-10 rounded-full"
+                        className="w-10 h-10 rounded-full flex-shrink-0"
                         onError={(e) => {
                           e.currentTarget.src = 'https://via.placeholder.com/40/1e293b/ffffff?text=' + token.symbol;
                         }}
                       />
-                      <div className="text-left">
+                      <div className="text-left min-w-0">
                         <div className="font-bold text-white">{token.symbol}</div>
-                        <div className="text-xs text-slate-400">{token.name}</div>
+                        <div className="text-xs text-slate-400 truncate">{token.name}</div>
                       </div>
                     </div>
                     
-                    <div className="text-right">
+                    <div className="text-right flex-shrink-0 ml-2">
                       {price ? (
                         <>
-                          <div className="font-medium text-white">
-                            ${price.usd.toLocaleString()}
+                          <div className="font-medium text-white text-sm">
+                            ${price.usd.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                           </div>
                           <div className={`text-xs ${
                             price.usd_24h_change >= 0 ? 'text-green-400' : 'text-red-400'
