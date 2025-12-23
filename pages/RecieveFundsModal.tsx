@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { X, Download, Share2, Copy, Check } from 'lucide-react';
 import { Profile } from '../src/context/types';
-import { TransactionService } from '../src/context/lib/transactionService';
+import { TransactionService } from '../src/lib/transactionService';
 
 interface ReceiveFundsModalProps {
   isOpen: boolean;

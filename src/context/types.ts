@@ -1,8 +1,9 @@
+// src/context/types.ts
 export interface Profile {
   id: string;
   full_name: string;
   username: string;
-  balance: number;
+  balance: number; // Fiat balance (PHP)
   created_at: string;
 }
 
@@ -41,3 +42,50 @@ export interface TransactionResult {
   transaction?: Transaction;
   error?: string;
 }
+
+// Crypto Asset types
+export interface CryptoAsset {
+  id: string;
+  user_id: string;
+  symbol: string; // BTC, ETH, etc.
+  name: string; // Bitcoin, Ethereum, etc.
+  amount: number; // How much crypto the user owns
+  purchase_price_usd: number; // Average purchase price in USD
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CryptoPrice {
+  symbol: string;
+  name: string;
+  current_price_usd: number;
+  price_change_24h: number; // Percentage
+  last_updated: string;
+}
+
+export interface PortfolioAsset extends CryptoAsset {
+  current_price_usd: number;
+  current_value_usd: number;
+  profit_loss_usd: number;
+  profit_loss_percentage: number;
+}
+
+// Navigation types
+export type NavigationTab = 'wallet' | 'assets' | 'swap' | 'activity' | 'settings';
+
+// User Settings Update Request
+export interface UserSettingsUpdateRequest {
+  full_name?: string;
+  username?: string;
+}
+export type ActiveTab = 'wallet' | 'assets' | 'swap' | 'activity' | 'settings';
+
+export interface CryptoAsset {
+  id: string;
+  user_id: string;
+  coin_id: string;
+  symbol: string;
+  amount: number;
+  created_at: string;
+}
+

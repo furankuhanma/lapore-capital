@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Send, Loader2, CheckCircle2, QrCode, User } from 'lucide-react';
-import { TransactionService } from '../src/context/lib/transactionService';
+import { TransactionService } from '../src/lib/transactionService';
 import { Profile } from '../src/context/types';
 
 interface SendFundsModalProps {

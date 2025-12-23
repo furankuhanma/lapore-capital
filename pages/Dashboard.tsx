@@ -1,31 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../src/context/AuthContext';
-import { supabase } from '../src/context/lib/supabase';
-import { Profile } from '../src/context/types';
-import {Send, QrCode, DollarSign, TrendingDown, Banknote, BanknoteArrowDown, BanknoteArrowUpIcon, RotateCcw, Clock, Layers} from 'lucide-react';
+import { supabase } from '../src/lib/supabase';
+import { Profile, ActiveTab } from '../src/context/types';
 import { 
-  LogOut, 
-  Wallet, 
-  ArrowUp, 
-  ArrowDown, 
-  Plus, 
-  Minus, 
+  Send, 
+  QrCode, 
+  DollarSign, 
+  BanknoteArrowDown,
   Bell,
-  Settings,
+  RefreshCw,
+  Wallet,
+  Layers,
   Repeat,
-  Zap,
-  LayoutGrid,
-  RefreshCw
+  Clock,
+  Settings
 } from 'lucide-react';
 import SendFundsModal from './SendFundsModal';
 import QRScannerModal from './QRScannerModal';
 import ReceiveFundsModal from './RecieveFundsModal';
-import TransactionHistory from './TransactionHistory';
+import AssetsTab from '../src/tabs/AssetsTab';
+import SwapTab from '../src/tabs/SwapTab';
+import ActivityTab from '../src/tabs/ActivityTabs';
+import SettingsTab from '../src/tabs/SettingsTab';
 
 const Dashboard: React.FC = () => {
   const { profile: authProfile, signOut, refreshProfile } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(authProfile);
   const [refreshing, setRefreshing] = useState(false);
+  const [activeTab, setActiveTab] = useState<ActiveTab>('wallet');
   
   // Modal states
   const [sendModalOpen, setSendModalOpen] = useState(false);
@@ -100,7 +102,7 @@ const Dashboard: React.FC = () => {
   };
 
   if (!profile) {
-    return null; // This shouldn't happen due to ProtectedRoute, but adding for safety
+    return null;
   }
 
   const balanceIncrease = previousBalance !== null 
@@ -118,7 +120,13 @@ const Dashboard: React.FC = () => {
             className="w-10 h-10 rounded-full border border-white/10"
           />
           <div className="flex flex-col">
-            <span className="text-sm font-bold text-white tracking-tight">Wallet 1</span>
+            <span className="text-sm font-bold text-white tracking-tight">
+              {activeTab === 'wallet' ? 'Wallet 1' : 
+               activeTab === 'assets' ? 'Portfolio' :
+               activeTab === 'swap' ? 'Exchange' :
+               activeTab === 'activity' ? 'Activity' :
+               'Settings'}
+            </span>
             <span className="text-[10px] text-slate-500 uppercase font-bold tracking-widest">
               {profile.username ? `@${profile.username}` : 'Main Account'}
             </span>
@@ -140,96 +148,137 @@ const Dashboard: React.FC = () => {
       </header>
 
       {/* Main Container */}
-      <main className="flex-1 max-w-lg mx-auto w-full px-6 py-8 space-y-12">
+      <main className="flex-1 max-w-lg mx-auto w-full px-6 py-8">
         
-        {/* Balance Section */}
-        <section className="text-center space-y-3">
-          <p className="text-slate-500 text-sm font-medium tracking-wide">Portfolio Balance</p>
-          <div className="space-y-1">
-            <h1 className={`text-6xl font-black text-white tracking-tighter transition-all duration-500 ${
-              balanceChanged ? (balanceIncrease ? 'animate-balance-increase' : 'animate-balance-decrease') : ''
-            }`}>
-              ₱{(profile.balance || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-            </h1>
-            {balanceChanged && (
-              <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border animate-in fade-in zoom-in-95 ${
-                balanceIncrease 
-                  ? 'bg-green-500/10 border-green-500/20' 
-                  : 'bg-red-500/10 border-red-500/20'
-              }`}>
-                <span className={`text-xs font-bold ${
-                  balanceIncrease ? 'text-green-400' : 'text-red-400'
+        {/* Wallet Tab (Default) */}
+        {activeTab === 'wallet' && (
+          <div className="space-y-12">
+            {/* Balance Section */}
+            <section className="text-center space-y-3">
+              <p className="text-slate-500 text-sm font-medium tracking-wide">Portfolio Balance</p>
+              <div className="space-y-1">
+                <h1 className={`text-6xl font-black text-white tracking-tighter transition-all duration-500 ${
+                  balanceChanged ? (balanceIncrease ? 'animate-balance-increase' : 'animate-balance-decrease') : ''
                 }`}>
-                  {balanceIncrease ? '+' : '-'}₱{Math.abs(profile.balance - (previousBalance || 0)).toFixed(2)}
-                </span>
+                  ₱{(profile.balance || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                </h1>
+                {balanceChanged && (
+                  <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border animate-in fade-in zoom-in-95 ${
+                    balanceIncrease 
+                      ? 'bg-green-500/10 border-green-500/20' 
+                      : 'bg-red-500/10 border-red-500/20'
+                  }`}>
+                    <span className={`text-xs font-bold ${
+                      balanceIncrease ? 'text-green-400' : 'text-red-400'
+                    }`}>
+                      {balanceIncrease ? '+' : '-'}₱{Math.abs(profile.balance - (previousBalance || 0)).toFixed(2)}
+                    </span>
+                  </div>
+                )}
               </div>
-            )}
+            </section>
+
+            {/* Action Buttons Grid */}
+            <section className="grid grid-cols-4 gap-4">
+              <ActionButton 
+                icon={<Send />} 
+                label="Send" 
+                onClick={() => setSendModalOpen(true)}
+              />
+              <ActionButton 
+                icon={<QrCode />} 
+                label="Receive" 
+                onClick={() => setReceiveModalOpen(true)}
+              />
+              <ActionButton icon={<DollarSign />} label="Buy" onClick={() => {}} />
+              <ActionButton icon={<BanknoteArrowDown />} label="Sell" onClick={() => {}} />
+            </section>
+
+            {/* Portfolio Preview */}
+            <section className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-white tracking-tight">Portfolio</h3>
+                <button 
+                  onClick={() => setActiveTab('assets')}
+                  className="text-xs font-bold text-ethblue uppercase tracking-widest hover:text-white transition-colors"
+                >
+                  View All
+                </button>
+              </div>
+
+              <div className="bg-cardbg border border-white/5 p-8 rounded-3xl flex flex-col items-center justify-center text-center space-y-4 group transition-all hover:border-ethblue/30">
+                <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-ethblue/10 transition-colors">
+                  <Wallet className="w-8 h-8 text-slate-600 group-hover:text-ethblue transition-colors" />
+                </div>
+                <div>
+                  <p className="text-white font-bold">No assets yet</p>
+                  <p className="text-slate-500 text-xs mt-1">Start building your portfolio</p>
+                </div>
+                <button 
+                  onClick={() => setActiveTab('assets')}
+                  className="bg-ethblue/20 hover:bg-ethblue/30 text-ethblue text-[10px] font-black uppercase tracking-widest px-6 py-2 rounded-full transition-all"
+                >
+                  Get Started
+                </button>
+              </div>
+            </section>
           </div>
-        </section>
+        )}
 
-        {/* Action Buttons Grid */}
-        <section className="grid grid-cols-4 gap-4">
-          <ActionButton 
-            icon={<Send />} 
-            label="Send" 
-            onClick={() => setSendModalOpen(true)}
-          />
-          <ActionButton 
-            icon={<QrCode />} 
-            label="Receive" 
-            onClick={() => setReceiveModalOpen(true)}
-          />
-          <ActionButton icon={<DollarSign />} label="Buy" onClick={() => {}} />
-          <ActionButton icon={<BanknoteArrowDown />} label="Sell" onClick={() => {}} />
-        </section>
+        {/* Assets Tab */}
+        {activeTab === 'assets' && (
+          <AssetsTab currentUser={profile} onRefresh={handleRefresh} />
+        )}
 
-        {/* Portfolio Section */}
-        <section className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xl font-bold text-white tracking-tight">Portfolio</h3>
-            <button className="text-xs font-bold text-ethblue uppercase tracking-widest hover:text-white transition-colors">Manage</button>
-          </div>
+        {/* Swap Tab */}
+        {activeTab === 'swap' && (
+          <SwapTab currentUser={profile} onRefresh={handleRefresh} />
+        )}
 
-          <div className="bg-cardbg border border-white/5 p-8 rounded-3xl flex flex-col items-center justify-center text-center space-y-4 group transition-all hover:border-ethblue/30">
-            <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-ethblue/10 transition-colors">
-              <Wallet className="w-8 h-8 text-slate-600 group-hover:text-ethblue transition-colors" />
-            </div>
-            <div>
-              <p className="text-white font-bold">No assets yet</p>
-              <p className="text-slate-500 text-xs mt-1">Start building your portfolio by depositing capital.</p>
-            </div>
-            <button className="bg-ethblue/20 hover:bg-ethblue/30 text-ethblue text-[10px] font-black uppercase tracking-widest px-6 py-2 rounded-full transition-all">
-              Get Started
-            </button>
-          </div>
-        </section>
+        {/* Activity Tab */}
+        {activeTab === 'activity' && (
+          <ActivityTab userId={profile.id} currentUser={profile} onRefresh={handleRefresh} />
+        )}
 
-        {/* Transaction History */}
-        <section className="space-y-4 pt-4 pb-20">
-          <TransactionHistory 
-            userId={profile.id} 
-            onRefresh={handleRefresh}
-          />
-        </section>
+        {/* Settings Tab */}
+        {activeTab === 'settings' && (
+          <SettingsTab currentUser={profile} onRefresh={handleRefresh} />
+        )}
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 inset-x-0 h-20 bg-darkbg/90 backdrop-blur-2xl border-t border-white/5 flex items-center justify-around px-4 z-40 lg:hidden">
-        <NavTab icon={<Wallet />} label="Wallet" active />
-        <NavTab icon={<Layers />} label="Assets" />
-        <NavTab icon={<Repeat />} label="Swap" />
-        <NavTab icon={<Clock />} label="Activity" />
-        <NavTab icon={<Settings />} label="Settings" />
+      <nav className="fixed bottom-0 inset-x-0 h-20 bg-darkbg/90 backdrop-blur-2xl border-t border-white/5 flex items-center justify-around px-4 z-40">
+        <NavTab 
+          icon={<Wallet />} 
+          label="Wallet" 
+          active={activeTab === 'wallet'}
+          onClick={() => setActiveTab('wallet')}
+        />
+        <NavTab 
+          icon={<Layers />} 
+          label="Assets" 
+          active={activeTab === 'assets'}
+          onClick={() => setActiveTab('assets')}
+        />
+        <NavTab 
+          icon={<Repeat />} 
+          label="Swap" 
+          active={activeTab === 'swap'}
+          onClick={() => setActiveTab('swap')}
+        />
+        <NavTab 
+          icon={<Clock />} 
+          label="Activity" 
+          active={activeTab === 'activity'}
+          onClick={() => setActiveTab('activity')}
+        />
+        <NavTab 
+          icon={<Settings />} 
+          label="Settings" 
+          active={activeTab === 'settings'}
+          onClick={() => setActiveTab('settings')}
+        />
       </nav>
-
-      {/* Logout Button (Desktop) */}
-      <button 
-        onClick={signOut}
-        className="hidden lg:flex fixed bottom-8 right-8 items-center gap-2 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/20 px-6 py-3 rounded-2xl font-bold transition-all group z-50 shadow-2xl"
-      >
-        <LogOut className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-        <span>Terminate</span>
-      </button>
 
       {/* Modals */}
       <SendFundsModal
@@ -296,9 +345,13 @@ const ActionButton: React.FC<{
 const NavTab: React.FC<{ 
   icon: React.ReactNode; 
   label: string; 
-  active?: boolean; 
-}> = ({ icon, label, active }) => (
-  <button className={`flex flex-col items-center gap-1.5 transition-all ${active ? 'text-ethblue' : 'text-slate-600 hover:text-slate-400'}`}>
+  active?: boolean;
+  onClick: () => void;
+}> = ({ icon, label, active, onClick }) => (
+  <button 
+    onClick={onClick}
+    className={`flex flex-col items-center gap-1.5 transition-all ${active ? 'text-ethblue' : 'text-slate-600 hover:text-slate-400'}`}
+  >
     {React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: 'w-6 h-6' }) : icon}
     <span className={`text-[10px] font-bold uppercase tracking-tighter ${active ? 'opacity-100' : 'opacity-60'}`}>{label}</span>
     {active && <div className="w-1 h-1 bg-ethblue rounded-full mt-0.5 shadow-[0_0_8px_rgba(60,60,255,0.8)]"></div>}

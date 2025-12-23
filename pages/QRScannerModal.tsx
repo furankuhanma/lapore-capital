@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Camera, AlertCircle, Settings as SettingsIcon } from 'lucide-react';
-import { TransactionService } from '../src/context/lib/transactionService';
+import { TransactionService } from '../src/lib/transactionService';
 
 interface QRScannerModalProps {
   isOpen: boolean;

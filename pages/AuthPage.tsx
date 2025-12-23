@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { supabase } from '../src/context/lib/supabase';
+import { supabase } from '../src/lib/supabase';
 import { AuthMode } from '../src/context/types';
 import { Lock, Mail, User, ShieldCheck, ChevronRight, Loader2, Cpu } from 'lucide-react';
 

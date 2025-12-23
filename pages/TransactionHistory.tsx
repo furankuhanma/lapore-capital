@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ArrowUpRight, ArrowDownLeft, Loader2, RefreshCw } from 'lucide-react';
-import { TransactionService } from '../src/context/lib/transactionService';
+import { TransactionService } from '../src/lib/transactionService';
 
 interface TransactionHistoryProps {
   userId: string;
