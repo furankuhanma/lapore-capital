@@ -14,7 +14,7 @@ interface SwapTabProps {
 interface Token {
   symbol: string;
   name: string;
-  icon: string;
+  logoUrl: string;
   coingeckoId: string;
   balance: number;
 }
@@ -25,16 +25,64 @@ interface TokenPrice {
 }
 
 const SwapTab: React.FC<SwapTabProps> = ({ currentUser, onRefresh }) => {
-  // Available tokens with CoinGecko IDs
+  // Available tokens with CoinGecko IDs and logo URLs
   const availableTokens: Token[] = [
-    { symbol: 'SOL', name: 'Solana', icon: '◎', coingeckoId: 'solana', balance: 0 },
-    { symbol: 'USDC', name: 'USD Coin', icon: '💵', coingeckoId: 'usd-coin', balance: 0 },
-    { symbol: 'USDT', name: 'Tether', icon: '₮', coingeckoId: 'tether', balance: 0 },
-    { symbol: 'ETH', name: 'Ethereum', icon: 'Ξ', coingeckoId: 'ethereum', balance: 0 },
-    { symbol: 'BTC', name: 'Bitcoin', icon: '₿', coingeckoId: 'bitcoin', balance: 0 },
-    { symbol: 'WBTC', name: 'Wrapped Bitcoin', icon: '₿', coingeckoId: 'wrapped-bitcoin', balance: 0 },
-    { symbol: 'RAY', name: 'Raydium', icon: '⚡', coingeckoId: 'raydium', balance: 0 },
-    { symbol: 'ORCA', name: 'Orca', icon: '🐋', coingeckoId: 'orca', balance: 0 },
+    { 
+      symbol: 'SOL', 
+      name: 'Solana', 
+      logoUrl: 'https://assets.coingecko.com/coins/images/4128/small/solana.png',
+      coingeckoId: 'solana', 
+      balance: 0 
+    },
+    { 
+      symbol: 'USDC', 
+      name: 'USD Coin', 
+      logoUrl: 'https://assets.coingecko.com/coins/images/6319/small/usdc.png',
+      coingeckoId: 'usd-coin', 
+      balance: 0 
+    },
+    { 
+      symbol: 'USDT', 
+      name: 'Tether', 
+      logoUrl: 'https://assets.coingecko.com/coins/images/325/small/Tether.png',
+      coingeckoId: 'tether', 
+      balance: 0 
+    },
+    { 
+      symbol: 'ETH', 
+      name: 'Ethereum', 
+      logoUrl: 'https://assets.coingecko.com/coins/images/279/small/ethereum.png',
+      coingeckoId: 'ethereum', 
+      balance: 0 
+    },
+    { 
+      symbol: 'BTC', 
+      name: 'Bitcoin', 
+      logoUrl: 'https://assets.coingecko.com/coins/images/1/small/bitcoin.png',
+      coingeckoId: 'bitcoin', 
+      balance: 0 
+    },
+    { 
+      symbol: 'WBTC', 
+      name: 'Wrapped Bitcoin', 
+      logoUrl: 'https://assets.coingecko.com/coins/images/7598/small/wrapped_bitcoin_wbtc.png',
+      coingeckoId: 'wrapped-bitcoin', 
+      balance: 0 
+    },
+    { 
+      symbol: 'RAY', 
+      name: 'Raydium', 
+      logoUrl: 'https://assets.coingecko.com/coins/images/13928/small/PSigc4ie_400x400.jpg',
+      coingeckoId: 'raydium', 
+      balance: 0 
+    },
+    { 
+      symbol: 'ORCA', 
+      name: 'Orca', 
+      logoUrl: 'https://assets.coingecko.com/coins/images/17547/small/Orca_Logo.png',
+      coingeckoId: 'orca', 
+      balance: 0 
+    },
   ];
 
   const [fromToken, setFromToken] = useState<Token>(availableTokens[2]); // USDT
@@ -257,7 +305,14 @@ const SwapTab: React.FC<SwapTabProps> = ({ currentUser, onRefresh }) => {
               onClick={() => openTokenModal('from')}
               className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-xl transition-colors"
             >
-              <span className="text-2xl">{fromToken.icon}</span>
+              <img 
+                src={fromToken.logoUrl} 
+                alt={fromToken.symbol}
+                className="w-8 h-8 rounded-full"
+                onError={(e) => {
+                  e.currentTarget.src = 'https://via.placeholder.com/32/1e293b/ffffff?text=' + fromToken.symbol;
+                }}
+              />
               <span className="font-bold text-white">{fromToken.symbol}</span>
               <ChevronDown className="w-4 h-4 text-slate-400" />
             </button>
@@ -308,7 +363,14 @@ const SwapTab: React.FC<SwapTabProps> = ({ currentUser, onRefresh }) => {
               onClick={() => openTokenModal('to')}
               className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-xl transition-colors"
             >
-              <span className="text-2xl">{toToken.icon}</span>
+              <img 
+                src={toToken.logoUrl} 
+                alt={toToken.symbol}
+                className="w-8 h-8 rounded-full"
+                onError={(e) => {
+                  e.currentTarget.src = 'https://via.placeholder.com/32/1e293b/ffffff?text=' + toToken.symbol;
+                }}
+              />
               <span className="font-bold text-white">{toToken.symbol}</span>
               <ChevronDown className="w-4 h-4 text-slate-400" />
             </button>
@@ -385,6 +447,19 @@ const SwapTab: React.FC<SwapTabProps> = ({ currentUser, onRefresh }) => {
             </>
           )}
         </button>
+
+        {/* Info Banner */}
+        <div className="bg-blue-500/10 border border-blue-500/20 rounded-2xl p-4 flex items-start gap-3">
+          <Info className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-blue-400 text-sm font-medium">
+              Demo Mode Active
+            </p>
+            <p className="text-blue-400/70 text-xs mt-1">
+              Add your VITE_COINGECKO_API_KEY to .env for live prices. Currently using demo data.
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Token Selection Modal */}
@@ -436,7 +511,14 @@ const SwapTab: React.FC<SwapTabProps> = ({ currentUser, onRefresh }) => {
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <span className="text-3xl">{token.icon}</span>
+                      <img 
+                        src={token.logoUrl} 
+                        alt={token.symbol}
+                        className="w-10 h-10 rounded-full"
+                        onError={(e) => {
+                          e.currentTarget.src = 'https://via.placeholder.com/40/1e293b/ffffff?text=' + token.symbol;
+                        }}
+                      />
                       <div className="text-left">
                         <div className="font-bold text-white">{token.symbol}</div>
                         <div className="text-xs text-slate-400">{token.name}</div>
