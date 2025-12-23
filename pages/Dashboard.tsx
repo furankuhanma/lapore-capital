@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../src/context/AuthContext';
 import { supabase } from '../src/context/lib/supabase';
 import { Profile } from '../src/context/types';
+import {Send, QrCode, DollarSign, TrendingDown, Banknote, BanknoteArrowDown, BanknoteArrowUpIcon} from 'lucide-react';
 import { 
   LogOut, 
   Wallet, 
@@ -168,18 +169,18 @@ const Dashboard: React.FC = () => {
 
         {/* Action Buttons Grid */}
         <section className="grid grid-cols-4 gap-4">
-          <ActionButton icon={<Plus />} label="Buy" onClick={() => {}} />
-          <ActionButton icon={<Minus />} label="Sell" onClick={() => {}} />
           <ActionButton 
-            icon={<ArrowUp />} 
+            icon={<Send />} 
             label="Send" 
             onClick={() => setSendModalOpen(true)}
           />
           <ActionButton 
-            icon={<ArrowDown />} 
+            icon={<QrCode />} 
             label="Receive" 
             onClick={() => setReceiveModalOpen(true)}
           />
+          <ActionButton icon={<DollarSign />} label="Buy" onClick={() => {}} />
+          <ActionButton icon={<BanknoteArrowDown />} label="Sell" onClick={() => {}} />
         </section>
 
         {/* Portfolio Section */}
