@@ -430,7 +430,7 @@ const SwapTab: React.FC<SwapTabProps> = ({ currentUser, onRefresh }) => {
         <button
           onClick={handleSwap}
           disabled={!fromAmount || parseFloat(fromAmount) <= 0 || parseFloat(fromAmount) > fromToken.balance || loading}
-          className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 disabled:from-slate-700 disabled:to-slate-700 disabled:cursor-not-allowed text-white font-bold py-3 sm:py-4 rounded-2xl transition-all flex items-center justify-center gap-2 text-sm sm:text-base"
+          className="w-full bg-gradient-to-r from-blue-400 to-purple-500 hover:from-blue-600 hover:to-purple-600 disabled:from-slate-700 disabled:to-slate-700 disabled:cursor-not-allowed text-white font-bold py-3 sm:py-4 rounded-2xl transition-all flex items-center justify-center gap-2 text-sm sm:text-base"
         >
           {loading ? (
             <>
