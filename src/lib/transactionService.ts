@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { TransactionRequest, TransactionResult, Profile } from '../types';
+import { TransactionRequest, TransactionResult, Profile } from '../context/types';
 
 /**
  * TransactionService handles all transaction operations
@@ -12,7 +12,7 @@ export class TransactionService {
    * This performs atomic operations to ensure data consistency:
    * 1. Validate sender has sufficient balance
    * 2. Verify receiver exists
-   * 3. Create transaction record
+   * 3. Create transaction record (single record)
    * 4. Update both balances
    */
   static async sendFunds(request: TransactionRequest): Promise<TransactionResult> {
@@ -58,45 +58,25 @@ export class TransactionService {
         return { success: false, error: 'Receiver account not found' };
       }
 
-      // Step 3: Create transaction records (one for sender, one for receiver)
+      // Step 3: Create single transaction record
       const timestamp = new Date().toISOString();
       
-      // Sender transaction (type: 'send')
-      const { data: senderTransaction, error: senderTxError } = await supabase
+      const { data: transaction, error: txError } = await supabase
         .from('transactions')
         .insert({
           sender_id,
           receiver_id,
           amount,
           currency,
-          type: 'send',
           timestamp,
-          description: description || `Transfer to ${receiverProfile.full_name}`,
+          description: description || `Transfer from ${senderProfile.full_name} to ${receiverProfile.full_name}`,
         })
         .select()
         .single();
 
-      if (senderTxError) {
-        console.error('Error creating sender transaction:', senderTxError);
+      if (txError) {
+        console.error('Error creating transaction:', txError);
         return { success: false, error: 'Failed to create transaction record' };
-      }
-
-      // Receiver transaction (type: 'receive')
-      const { error: receiverTxError } = await supabase
-        .from('transactions')
-        .insert({
-          sender_id,
-          receiver_id,
-          amount,
-          currency,
-          type: 'receive',
-          timestamp,
-          description: description || `Received from ${senderProfile.full_name}`,
-        });
-
-      if (receiverTxError) {
-        console.error('Error creating receiver transaction:', receiverTxError);
-        // Continue anyway - sender transaction is primary
       }
 
       // Step 4: Update sender balance (deduct)
@@ -125,7 +105,7 @@ export class TransactionService {
       return {
         success: true,
         transaction: {
-          ...senderTransaction,
+          ...transaction,
           sender_name: senderProfile.full_name,
           receiver_name: receiverProfile.full_name,
         },
@@ -177,6 +157,7 @@ export class TransactionService {
 
   /**
    * Get transaction history for a user
+   * Returns transactions with type calculated based on user's perspective
    */
   static async getTransactionHistory(userId: string, limit = 50): Promise<any[]> {
     try {
@@ -196,7 +177,13 @@ export class TransactionService {
         return [];
       }
 
-      return data || [];
+      // Calculate transaction type based on user's perspective
+      const withTypes = (data || []).map(tx => ({
+        ...tx,
+        type: tx.sender_id === userId ? 'send' : 'receive'
+      }));
+
+      return withTypes;
     } catch (error) {
       console.error('Error fetching transaction history:', error);
       return [];
